@@ -92,8 +92,8 @@ export default function ProceduralPyramid({
           emissive={palette.pyramidEmissive || palette.objectEmissive}
           emissiveIntensity={0.35}
           flatShading
-          roughness={0.55}
-          metalness={0.2}
+          roughness={0.6}
+          metalness={0}
         />
       </mesh>
       <lineSegments geometry={edgesGeom}>

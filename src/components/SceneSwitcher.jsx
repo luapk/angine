@@ -40,6 +40,9 @@ export default function SceneSwitcher({ state, engine, palette }) {
   }, [spinSeed])
 
   switch (scene) {
+    case SCENES.WORD_FLASH:
+      return null   // text rendered as DOM overlay in Visualizer
+
     case SCENES.TUNNEL:
       return <TriangleTunnel key={`tun-${spinSeed}`} engine={engine} palette={palette} />
 

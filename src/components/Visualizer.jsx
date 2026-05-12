@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 
 import PolkaBackground from './PolkaBackground.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
+import WordFlash from './WordFlash.jsx'
 import EngineTick from './EngineTick.jsx'
 import HUD from './HUD.jsx'
 import { resolvePalette } from '../scene/palette.js'
 import { SCENES, PALETTES } from '../scene/SceneDirector.js'
+
+function DisableACES() {
+  const gl = useThree(s => s.gl)
+  useEffect(() => { gl.toneMapping = 0 }, [gl])
+  return null
+}
 
 const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
 const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
@@ -17,9 +24,10 @@ export default function Visualizer({ engine, director, showHUD }) {
   const [state, setState] = useState(director.state)
   useEffect(() => director.onChange((s) => setState({ ...s })), [director])
 
-  const palette = useMemo(() => resolvePalette(state.palette), [state.palette])
-  const isTunnel = state.scene === SCENES.TUNNEL
-  const isSplit  = state.scene === SCENES.SPLIT
+  const palette   = useMemo(() => resolvePalette(state.palette), [state.palette])
+  const isTunnel  = state.scene === SCENES.TUNNEL
+  const isSplit   = state.scene === SCENES.SPLIT
+  const isWord    = state.scene === SCENES.WORD_FLASH
 
   const flashRef = useRef(null)
   useEffect(() => {
@@ -57,6 +65,7 @@ export default function Visualizer({ engine, director, showHUD }) {
           }}
         >
           <EngineTick engine={engine} />
+          <DisableACES />
 
           <ambientLight intensity={0.7} />
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
@@ -75,6 +84,8 @@ export default function Visualizer({ engine, director, showHUD }) {
             <Vignette eskil={false} offset={0.25} darkness={isTunnel ? 0.65 : 0.35} />
           </EffectComposer>
         </Canvas>
+
+        {isWord && <WordFlash key={state.spinSeed} word={state.currentWord} palette={palette} />}
 
         <div ref={flashRef} className="invert-flash" />
         <div className="grain" />
