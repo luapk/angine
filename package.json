@@ -1,0 +1,25 @@
+{
+  "name": "angine-de-poitrine-visualizer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generative audio-reactive visualizer for Angine de Poitrine. 3D heads + pyramid, polka backgrounds, triangle-tunnel transitions, beat-quantised cuts.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/postprocessing": "^2.16.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0",
+    "web-audio-beat-detector": "^8.2.30"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.3",
+    "vite": "^5.4.10"
+  }
+}
