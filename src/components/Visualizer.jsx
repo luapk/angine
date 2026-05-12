@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { EffectComposer, Bloom, ChromaticAberration, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
+import * as THREE from 'three'
 
 import PolkaBackground from './PolkaBackground.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
@@ -10,18 +11,19 @@ import HUD from './HUD.jsx'
 import { resolvePalette } from '../scene/palette.js'
 import { SCENES } from '../scene/SceneDirector.js'
 
-/**
- * Drives chromatic aberration offset from engine.values each frame.
- * Sibling of EffectComposer (NOT wrapped around the effect — composer
- * requires direct effect children).
- */
+// Drives chromatic aberration per frame. Sibling of EffectComposer (not a
+// child — composer extracts effect instances directly). Uses a stable Vector2
+// ref because postprocessing v2.16+ stores the offset prop as a raw array in
+// the uniform, so .set() would throw on target.current.offset directly.
 function ChromaUpdater({ engine, target }) {
+  const vec = useRef(new THREE.Vector2())
   useFrame(() => {
-    if (!target.current?.offset) return
+    if (!target.current) return
     const t = engine.values.treble || 0
     const b = engine.values.bassPunch || 0
     const amount = 0.0008 + t * 0.006 + b * 0.003
-    target.current.offset.set(amount, amount * 0.6)
+    vec.current.set(amount, amount * 0.6)
+    target.current.offset = vec.current
   })
   return null
 }
