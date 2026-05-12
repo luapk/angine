@@ -8,7 +8,7 @@ import { useRef, useEffect } from 'react'
  * Do NOT use useFrame here — useFrame is Canvas-only and will throw
  * "R3F: Hooks can only be used within the Canvas component!".
  */
-export default function PolkaBackground({ engine, palette }) {
+export default function PolkaBackground({ engine, palette, half }) {
   const ref = useRef(null)
 
   // Per-frame pulse via rAF
@@ -42,7 +42,10 @@ export default function PolkaBackground({ engine, palette }) {
       ref={ref}
       style={{
         position: 'absolute',
-        inset: 0,
+        top: 0,
+        bottom: 0,
+        left:  half === 'right' ? '50%' : 0,
+        right: half === 'left'  ? '50%' : 0,
         zIndex: 1,
         '--bg': palette.bg,
         '--polka': palette.polka,
