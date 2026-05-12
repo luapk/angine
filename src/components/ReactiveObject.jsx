@@ -136,6 +136,9 @@ export default function ReactiveObject(props) {
   )
 }
 
+// Use local draco decoder to avoid CDN dependency (important for mobile)
+useGLTF.setDecoderPath('/draco/')
+
 // Preload to avoid pop-in
 useGLTF.preload('/models/guitar.glb')
 useGLTF.preload('/models/drums.glb')
