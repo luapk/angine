@@ -222,9 +222,9 @@ export class SceneDirector {
     const recent = new Set(this.state.recentScenes)
     const cur = this.state.scene
 
-    const tunnelW = (recentPeak ? this.opts.tunnelPeakBoost : 1.0) *
-                    (energy > 0.55 ? 2.5 : 0.6) *
-                    (cur === SCENES.TUNNEL ? 0.1 : 1.0)
+    const tunnelW = (recentPeak ? this.opts.tunnelPeakBoost * 0.5 : 0.5) *
+                    (energy > 0.55 ? 1.2 : 0.3) *
+                    (cur === SCENES.TUNNEL ? 0.0 : 1.0)
     const threeUpW = energy > 0.5 ? 2.5 : 1.0
     const twoUpW = 2.2
     const oneUpW = 2.0
