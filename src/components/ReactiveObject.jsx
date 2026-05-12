@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect, Suspense } from 'react'
+import { useRef, useMemo, Suspense } from 'react'
 import React from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -45,31 +45,14 @@ function GLBObject(props) {
     box.setFromObject(cloned)
     const center = box.getCenter(new THREE.Vector3())
     cloned.position.sub(center)
-    // Replace all baked materials with neutral B&W standard material
     cloned.traverse(obj => {
       if (obj.isMesh) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: '#ffffff',
-          emissive: '#000000',
-          emissiveIntensity: 0.35,
-          roughness: 0.6,
-          metalness: 0,
-        })
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
       }
     })
     return cloned
   }, [gltf])
-
-  // Keep material colours in sync with palette
-  useEffect(() => {
-    if (!scene) return
-    scene.traverse(obj => {
-      if (obj.isMesh && obj.material) {
-        obj.material.color.set(palette?.objectFg || '#ffffff')
-        obj.material.emissive.set(palette?.objectEmissive || '#000000')
-      }
-    })
-  }, [scene, palette])
 
   useReactiveTransform({ ref: group, engine, baseScale, spinAxis, spinDirection, spinSpeed, reactiveBand, punchAmount, trebleWobble })
 

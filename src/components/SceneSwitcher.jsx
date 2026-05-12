@@ -2,6 +2,9 @@ import { useMemo } from 'react'
 import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
 import TriangleTunnel from './TriangleTunnel.jsx'
+import TrianglePolar from './TrianglePolar.jsx'
+import TriangleField from './TriangleField.jsx'
+import QuietTriangle from './QuietTriangle.jsx'
 import { SCENES, PALETTES } from '../scene/SceneDirector.js'
 import { resolvePalette } from '../scene/palette.js'
 
@@ -180,6 +183,15 @@ export default function SceneSwitcher({ state, engine, palette }) {
         </group>
       )
     }
+
+    case SCENES.TRIANGLE_POLAR:
+      return <TrianglePolar key={`tp-${spinSeed}`} engine={engine} palette={palette} />
+
+    case SCENES.TRIANGLE_FIELD:
+      return <TriangleField key={`tf-${spinSeed}`} engine={engine} palette={palette} spinSeed={spinSeed} />
+
+    case SCENES.QUIET_TRIANGLE:
+      return <QuietTriangle key={`qt-${spinSeed}`} engine={engine} />
 
     case SCENES.TWO_UP:
     default: {

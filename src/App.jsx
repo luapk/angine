@@ -3,11 +3,12 @@ import { AudioEngine } from './audio/AudioEngine.js'
 import { SceneDirector } from './scene/SceneDirector.js'
 import UploadScreen from './components/UploadScreen.jsx'
 import Visualizer from './components/Visualizer.jsx'
+import DiceScreen from './components/DiceScreen.jsx'
 
 const DEFAULT_TRACK = '/audio/Sarniezz.mp3'
 
 export default function App() {
-  const [phase, setPhase] = useState('upload')   // 'upload' | 'loading' | 'playing'
+  const [phase, setPhase] = useState('upload')   // 'upload' | 'loading' | 'ready' | 'playing'
   const [status, setStatus] = useState('')
   const [showHUD, setShowHUD] = useState(false)
   const [defaultFile, setDefaultFile] = useState(null)
@@ -42,16 +43,18 @@ export default function App() {
         minBarsPerScene: 1,
         maxBarsPerScene: 8,
       })
-      // Tiny grace period so user sees BPM before the show kicks off
-      setStatus(`BPM ${engine.bpm.toFixed(1)} · STARTING`)
-      await new Promise((res) => setTimeout(res, 250))
-      engine.play()
-      setPhase('playing')
+      setStatus(`BPM ${engine.bpm.toFixed(1)} · READY`)
+      setPhase('ready')
     } catch (err) {
       console.error(err)
       setStatus(`ERROR: ${err.message || 'failed to load'}`)
       setPhase('upload')
     }
+  }
+
+  const handlePlay = () => {
+    engineRef.current?.play()
+    setPhase('playing')
   }
 
   // Hotkeys
@@ -74,6 +77,10 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  if (phase === 'ready' && engineRef.current && directorRef.current) {
+    return <DiceScreen bpm={engineRef.current.bpm} onPlay={handlePlay} />
+  }
 
   if (phase === 'playing' && engineRef.current && directorRef.current) {
     return <Visualizer engine={engineRef.current} director={directorRef.current} showHUD={showHUD} />

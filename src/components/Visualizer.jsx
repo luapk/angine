@@ -28,6 +28,7 @@ export default function Visualizer({ engine, director, showHUD }) {
   const isTunnel  = state.scene === SCENES.TUNNEL
   const isSplit   = state.scene === SCENES.SPLIT
   const isWord    = state.scene === SCENES.WORD_FLASH
+  const isQuiet   = state.scene === SCENES.QUIET_TRIANGLE
 
   const flashRef = useRef(null)
   useEffect(() => {
@@ -42,13 +43,13 @@ export default function Visualizer({ engine, director, showHUD }) {
 
   return (
     <div className="stage">
-      <div className="stage-inner" style={{ background: isSplit ? '#000' : palette.bg }}>
+      <div className="stage-inner" style={{ background: (isSplit || isQuiet) ? '#000' : palette.bg }}>
         {isSplit ? (
           <>
             <PolkaBackground engine={engine} palette={SPLIT_LEFT}  half="left" />
             <PolkaBackground engine={engine} palette={SPLIT_RIGHT} half="right" />
           </>
-        ) : !isTunnel && (
+        ) : (!isTunnel && !isQuiet) && (
           <PolkaBackground engine={engine} palette={palette} />
         )}
 

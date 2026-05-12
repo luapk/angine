@@ -13,6 +13,9 @@ export const SCENES = Object.freeze({
   TUNNEL: 'TUNNEL',
   SPLIT: 'SPLIT',
   WORD_FLASH: 'WORD_FLASH',
+  TRIANGLE_POLAR: 'TRIANGLE_POLAR',
+  TRIANGLE_FIELD: 'TRIANGLE_FIELD',
+  QUIET_TRIANGLE: 'QUIET_TRIANGLE',
 })
 
 const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
@@ -60,6 +63,7 @@ export class SceneDirector {
       recentScenes: [],   // last few, to suppress immediate repeats
       barCount: 0,
       cutCount: 0,
+      quietBars: 0,
     }
 
     // Subscribe
@@ -81,8 +85,33 @@ export class SceneDirector {
 
     const beatsInScene = beat - this.state.sceneStartBeat
     const barsInScene = beatsInScene / 4
-    const recentPeak = (beat - this.state.lastPeakBeat) < 4   // peak within last bar
     const energy = this.engine.values.overall
+
+    // Track consecutive quiet bars for quiet scene
+    if (energy < 0.15) {
+      this.state.quietBars = (this.state.quietBars || 0) + 1
+    } else {
+      this.state.quietBars = 0
+    }
+    // Trigger quiet triangle after 2 silent bars (only after track has been playing 8+ bars)
+    if (this.state.quietBars >= 2 && this.state.barCount >= 8 && this.state.scene !== SCENES.QUIET_TRIANGLE) {
+      this._cutTo(SCENES.QUIET_TRIANGLE, beat, { reason: 'quiet' })
+      return
+    }
+    // Exit quiet triangle as soon as energy returns
+    if (this.state.scene === SCENES.QUIET_TRIANGLE && energy > 0.2 && barsInScene >= 1) {
+      this._cut(beat, { reason: 'quietEnd' })
+      return
+    }
+    // Limit tunnel to 2 bars max — cut away at 60% chance per bar, forced at 3
+    if (this.state.scene === SCENES.TUNNEL && barsInScene >= 2) {
+      if (Math.random() < 0.65 || barsInScene >= 3) {
+        this._cut(beat, { reason: 'tunnelLimit' })
+        return
+      }
+    }
+
+    const recentPeak = (beat - this.state.lastPeakBeat) < 4   // peak within last bar
 
     // Forced cut if scene has run too long
     if (barsInScene >= this.opts.maxBarsPerScene) {
@@ -194,6 +223,8 @@ export class SceneDirector {
     const oneUpW = 2.0
     const splitW   = 1.8
     const wordW    = 2.5
+    const triPolarW = 1.6
+    const triFieldW = 1.6
 
     const candidates = [
       { value: SCENES.TUNNEL,         weight: tunnelW },
@@ -204,6 +235,8 @@ export class SceneDirector {
       { value: SCENES.ONE_UP_PYRAMID, weight: isFourBar ? oneUpW * 1.5 : oneUpW * 0.7 },
       { value: SCENES.SPLIT,          weight: splitW },
       { value: SCENES.WORD_FLASH,     weight: wordW },
+      { value: SCENES.TRIANGLE_POLAR, weight: triPolarW },
+      { value: SCENES.TRIANGLE_FIELD, weight: triFieldW },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes
