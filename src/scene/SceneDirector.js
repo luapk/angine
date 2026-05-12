@@ -16,9 +16,10 @@ export const SCENES = Object.freeze({
   TRIANGLE_POLAR: 'TRIANGLE_POLAR',
   TRIANGLE_FIELD: 'TRIANGLE_FIELD',
   QUIET_TRIANGLE: 'QUIET_TRIANGLE',
+  POLKA_ZOOM: 'POLKA_ZOOM',
 })
 
-const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
+export const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
 
 export const PALETTES = Object.freeze({
   WHITE_ON_BLACK: 'WHITE_ON_BLACK',   // black bg, white polka / white keyline
@@ -55,6 +56,9 @@ export class SceneDirector {
       scene: SCENES.TWO_UP,
       palette: PALETTES.WHITE_ON_BLACK,
       currentWord: WORDS[0],
+      currentWords: [WORDS[0], WORDS[1]],
+      lastWordIndex: -1,
+      splitFlip: false,
       sceneStartBeat: 0,
       paletteStartBeat: 0,
       spinSeed: Math.random() * 1000,
@@ -103,12 +107,10 @@ export class SceneDirector {
       this._cut(beat, { reason: 'quietEnd' })
       return
     }
-    // Limit tunnel to 2 bars max — cut away at 60% chance per bar, forced at 3
-    if (this.state.scene === SCENES.TUNNEL && barsInScene >= 2) {
-      if (Math.random() < 0.65 || barsInScene >= 3) {
-        this._cut(beat, { reason: 'tunnelLimit' })
-        return
-      }
+    // Limit tunnel to 1 bar max — force cut to a different scene
+    if (this.state.scene === SCENES.TUNNEL && barsInScene >= 1) {
+      this._cut(beat, { reason: 'tunnelLimit' })
+      return
     }
 
     const recentPeak = (beat - this.state.lastPeakBeat) < 4   // peak within last bar
@@ -177,7 +179,7 @@ export class SceneDirector {
   }
 
   _cutTo(nextScene, beat, ctx = {}) {
-    if (nextScene === this.state.scene && nextScene !== SCENES.TUNNEL) return
+    if (nextScene === this.state.scene) return
 
     // Slide history
     this.state.recentScenes = [this.state.scene, ...this.state.recentScenes].slice(0, 3)
@@ -186,13 +188,18 @@ export class SceneDirector {
     this.state.spinSeed = Math.random() * 1000
     this.state.polkaSeed = Math.random() * 1000
     this.state.cutCount++
+    this.state.splitFlip = Math.random() < 0.5
 
-    // Pick a fresh word each time we hit a WORD_FLASH scene
+    // For WORD_FLASH: pick a window of 2-3 consecutive words from the sequence,
+    // starting after the previous appearance so we cycle through all of them.
     if (nextScene === SCENES.WORD_FLASH) {
-      const prev = this.state.currentWord
-      let next = prev
-      while (next === prev && WORDS.length > 1) next = WORDS[Math.floor(Math.random() * WORDS.length)]
-      this.state.currentWord = next
+      const count = Math.random() < 0.5 ? 2 : 3
+      const start = (this.state.lastWordIndex + 1 + Math.floor(Math.random() * 2)) % WORDS.length
+      const words = []
+      for (let i = 0; i < count; i++) words.push(WORDS[(start + i) % WORDS.length])
+      this.state.currentWords = words
+      this.state.currentWord = words[0]
+      this.state.lastWordIndex = (start + count - 1) % WORDS.length
     }
 
     // Solo guitar/drums always show black bg + white dots
@@ -221,10 +228,11 @@ export class SceneDirector {
     const threeUpW = energy > 0.5 ? 2.5 : 1.0
     const twoUpW = 2.2
     const oneUpW = 2.0
-    const splitW   = 1.8
+    const splitW   = 3.2
     const wordW    = 2.5
     const triPolarW = 1.6
     const triFieldW = 1.6
+    const polkaZoomW = 2.0
 
     const candidates = [
       { value: SCENES.TUNNEL,         weight: tunnelW },
@@ -237,6 +245,7 @@ export class SceneDirector {
       { value: SCENES.WORD_FLASH,     weight: wordW },
       { value: SCENES.TRIANGLE_POLAR, weight: triPolarW },
       { value: SCENES.TRIANGLE_FIELD, weight: triFieldW },
+      { value: SCENES.POLKA_ZOOM,     weight: polkaZoomW },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes

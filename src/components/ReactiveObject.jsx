@@ -24,6 +24,11 @@ function useReactiveTransform({ ref, engine, baseScale, spinAxis, spinDirection,
     ref.current.rotation.x += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
     ref.current.rotation.z += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
 
+    // Never rotate past ±45° on Z
+    const Z_LIMIT = Math.PI / 4
+    if (ref.current.rotation.z > Z_LIMIT) ref.current.rotation.z = Z_LIMIT
+    else if (ref.current.rotation.z < -Z_LIMIT) ref.current.rotation.z = -Z_LIMIT
+
     const s = baseScale * (1 + reactive * punchAmount)
     ref.current.scale.set(s, s, s)
   })
