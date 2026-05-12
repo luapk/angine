@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import ReactiveObject from './ReactiveObject.jsx'
+import ProceduralPyramid from './ProceduralPyramid.jsx'
 import TriangleTunnel from './TriangleTunnel.jsx'
 import { SCENES } from '../scene/SceneDirector.js'
 
 const URLS = {
-  guitar:  '/models/guitar.glb',
-  drums:   '/models/drums.glb',
-  pyramid: '/models/pyramid.glb',
+  guitar: '/models/guitar.glb',
+  drums:  '/models/drums.glb',
 }
 
 /**
@@ -77,9 +77,8 @@ export default function SceneSwitcher({ state, engine, palette }) {
 
     case SCENES.ONE_UP_PYRAMID:
       return (
-        <ReactiveObject
+        <ProceduralPyramid
           key={`p-${spinSeed}`}
-          url={URLS.pyramid}
           engine={engine}
           palette={palette}
           position={[0, 0, 0]}
@@ -89,7 +88,6 @@ export default function SceneSwitcher({ state, engine, palette }) {
           spinSpeed={quirks.heroSpeed * 1.4}
           reactiveBand="overall"
           punchAmount={0.25}
-          fallbackGeometry="tetra"
         />
       )
 
@@ -111,8 +109,7 @@ export default function SceneSwitcher({ state, engine, palette }) {
             tilt={quirks.tiltA}
             fallbackGeometry="sphere"
           />
-          <ReactiveObject
-            url={URLS.pyramid}
+          <ProceduralPyramid
             engine={engine}
             palette={palette}
             position={[0, 0, 0]}
@@ -122,7 +119,6 @@ export default function SceneSwitcher({ state, engine, palette }) {
             spinSpeed={1.3}
             reactiveBand="overall"
             punchAmount={0.3}
-            fallbackGeometry="tetra"
           />
           <ReactiveObject
             url={URLS.drums}

@@ -125,8 +125,6 @@ export default function ReactiveObject(props) {
   )
 }
 
-export function preloadGLBs(urls = []) {
-  for (const u of urls) {
-    try { useGLTF.preload(u) } catch (e) { /* noop */ }
-  }
-}
+// Preload to avoid pop-in
+useGLTF.preload('/models/guitar.glb')
+useGLTF.preload('/models/drums.glb')
