@@ -42,7 +42,6 @@ export default function TriangleTunnel({ engine, palette }) {
     for (let i = 0; i < RING_COUNT; i++) {
       const line = new THREE.Line(geometry, material)
       line.position.set(0, 0, -i * RING_SPACING + 3)
-      line.rotation.z = (i * Math.PI) / 9
       arr.push(line)
     }
     return arr
@@ -62,16 +61,14 @@ export default function TriangleTunnel({ engine, palette }) {
     const v = engine.values
     const baseSpeed = 20
     const speed = baseSpeed * (1 + v.bassPunch * 1.5 + v.overall * 0.7)
-    const twistPerFrame = (0.7 + v.mid * 2.4) * dt
 
     const recycleDist = RING_COUNT * RING_SPACING
     for (const line of lines) {
       line.position.z += speed * dt
-      line.rotation.z += twistPerFrame * 0.4
       if (line.position.z > 5) line.position.z -= recycleDist
     }
 
-    group.current.rotation.z += dt * 0.2 * (1 + v.treble * 2.2)
+    group.current.rotation.z += dt * 0.06 * (1 + v.treble * 0.8)
   })
 
   return (

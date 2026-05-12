@@ -12,8 +12,6 @@ export const SCENES = Object.freeze({
   ONE_UP_PYRAMID: 'ONE_UP_PYRAMID',
   TUNNEL: 'TUNNEL',
   SPLIT: 'SPLIT',
-  CLOSEUP_GUITAR: 'CLOSEUP_GUITAR',
-  CLOSEUP_DRUMS: 'CLOSEUP_DRUMS',
 })
 
 export const PALETTES = Object.freeze({
@@ -120,6 +118,9 @@ export class SceneDirector {
   }
 
   _flipPalette({ allowGold, intensity = 0.5 } = {}) {
+    const scene = this.state.scene
+    if (scene === SCENES.ONE_UP_GUITAR || scene === SCENES.ONE_UP_DRUMS) return
+
     const r = Math.random()
     const current = this.state.palette
 
@@ -154,6 +155,13 @@ export class SceneDirector {
     this.state.polkaSeed = Math.random() * 1000
     this.state.cutCount++
 
+    // Solo guitar/drums always show black bg + white dots
+    if (nextScene === SCENES.ONE_UP_GUITAR || nextScene === SCENES.ONE_UP_DRUMS) {
+      this.state.palette = PALETTES.WHITE_ON_BLACK
+      this._emit()
+      return
+    }
+
     // ~40% of cuts also flip the palette; peak cuts almost always do
     const pPaletteFlip = ctx.recentPeak ? 0.85 : 0.35
     if (Math.random() < pPaletteFlip) {
@@ -174,7 +182,6 @@ export class SceneDirector {
     const twoUpW = 2.2
     const oneUpW = 2.0
     const splitW = 1.8
-    const closeupW = energy > 0.6 ? 2.0 : 0.7   // close-ups suit high intensity
 
     const candidates = [
       { value: SCENES.TUNNEL,         weight: tunnelW },
@@ -184,8 +191,6 @@ export class SceneDirector {
       { value: SCENES.ONE_UP_DRUMS,   weight: oneUpW },
       { value: SCENES.ONE_UP_PYRAMID, weight: isFourBar ? oneUpW * 1.5 : oneUpW * 0.7 },
       { value: SCENES.SPLIT,          weight: splitW },
-      { value: SCENES.CLOSEUP_GUITAR, weight: closeupW },
-      { value: SCENES.CLOSEUP_DRUMS,  weight: closeupW },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes
