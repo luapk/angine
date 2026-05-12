@@ -5,6 +5,7 @@ import TriangleTunnel from './TriangleTunnel.jsx'
 import TrianglePolar from './TrianglePolar.jsx'
 import TriangleField from './TriangleField.jsx'
 import QuietTriangle from './QuietTriangle.jsx'
+import DotParadeGrid from './DotParadeGrid.jsx'
 import { SCENES, PALETTES } from '../scene/SceneDirector.js'
 import { resolvePalette } from '../scene/palette.js'
 
@@ -20,7 +21,7 @@ const URLS = {
  * Picks the scene tree based on director state.
  * Keyed on scene + spinSeed so each cut remounts → hard cut feel.
  */
-export default function SceneSwitcher({ state, engine, palette }) {
+export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
   const { scene, spinSeed, splitFlip } = state
 
   // Generative quirks per scene instance — derived from spinSeed so they stay
@@ -235,6 +236,19 @@ export default function SceneSwitcher({ state, engine, palette }) {
 
     case SCENES.QUIET_TRIANGLE:
       return <QuietTriangle key={`qt-${spinSeed}`} engine={engine} />
+
+    case SCENES.DOT_PARADE:
+      // Phase 0: dots are DOM layer (DotReveal in Visualizer) — nothing in Canvas
+      // Phase 1: guitar grid
+      // Phase 2: drums grid (white bg also handled in Visualizer)
+      if (dotPhase === 0) return null
+      return (
+        <DotParadeGrid
+          key={`dp-${spinSeed}-${dotPhase}`}
+          url={dotPhase === 1 ? URLS.guitar : URLS.drums}
+          engine={engine}
+        />
+      )
 
     case SCENES.TWO_UP:
     default: {

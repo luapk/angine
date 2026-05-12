@@ -16,17 +16,11 @@ function makeFaceTexture(n) {
   canvas.width = 128
   canvas.height = 128
   const ctx = canvas.getContext('2d')
-
-  // White background
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, 128, 128)
-
-  // Rounded rectangle border
   ctx.strokeStyle = '#ccc'
   ctx.lineWidth = 4
   ctx.strokeRect(4, 4, 120, 120)
-
-  // Dots
   ctx.fillStyle = '#000000'
   const dots = DOT_LAYOUTS[n] || []
   for (const [u, v] of dots) {
@@ -34,13 +28,11 @@ function makeFaceTexture(n) {
     ctx.arc(u * 128, v * 128, 9, 0, Math.PI * 2)
     ctx.fill()
   }
-
   return new THREE.CanvasTexture(canvas)
 }
 
 function Die({ position, bias }) {
   const meshRef = useRef()
-
   const materials = useMemo(() => {
     const faces = [1, 6, 2, 5, 3, 4]
     return faces.map(n => new THREE.MeshStandardMaterial({
@@ -63,9 +55,14 @@ function Die({ position, bias }) {
   )
 }
 
-export default function DiceScreen({ bpm, onPlay }) {
+export default function DiceScreen({ bpm, onPlay, onUpload }) {
   return (
     <div className="dice-screen">
+      <div className="brand-garamond" style={{ textAlign: 'center' }}>
+        ANGINE<br />DE<br />POITRINE
+        <span className="brand-garamond-sub">VISUAL ENGINE · V0.1</span>
+      </div>
+
       <div className="dice-canvas-wrap">
         <Canvas
           gl={{ antialias: true, alpha: true }}
@@ -78,9 +75,19 @@ export default function DiceScreen({ bpm, onPlay }) {
           <Die position={[1.05, 0, 0]} bias={1} />
         </Canvas>
       </div>
+
       <div className="dice-label">ROLL DICE TO PLAY</div>
       <div className="dice-bpm">{bpm?.toFixed(1)} BPM DETECTED</div>
       <button className="dice-btn" onClick={onPlay}>▶ START SEQUENCE</button>
+
+      {onUpload && (
+        <button
+          className="dice-upload-link"
+          onClick={onUpload}
+        >
+          UPLOAD DIFFERENT TRACK
+        </button>
+      )}
     </div>
   )
 }
