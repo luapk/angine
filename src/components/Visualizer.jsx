@@ -5,6 +5,7 @@ import { BlendFunction } from 'postprocessing'
 
 import PolkaBackground from './PolkaBackground.jsx'
 import PolkaZoom from './PolkaZoom.jsx'
+import DotReveal from './DotReveal.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
 import WordFlash from './WordFlash.jsx'
 import EngineTick from './EngineTick.jsx'
@@ -32,9 +33,20 @@ export default function Visualizer({ engine, director, showHUD }) {
   const isQuiet     = state.scene === SCENES.QUIET_TRIANGLE
   const isTriPolar  = state.scene === SCENES.TRIANGLE_POLAR
   const isTriField  = state.scene === SCENES.TRIANGLE_FIELD
-  const isPolkaZoom = state.scene === SCENES.POLKA_ZOOM
-  const isTri2D     = isTriPolar || isTriField
-  const splitFlip   = state.splitFlip
+  const isPolkaZoom  = state.scene === SCENES.POLKA_ZOOM
+  const isDotParade  = state.scene === SCENES.DOT_PARADE
+  const isTri2D      = isTriPolar || isTriField
+  const splitFlip    = state.splitFlip
+
+  // DOT_PARADE internal phase: 0=dots, 1=guitar grid, 2=drums grid (white bg)
+  const [dotPhase, setDotPhase] = useState(0)
+  useEffect(() => {
+    if (!isDotParade) { setDotPhase(0); return }
+    setDotPhase(0)
+    const t1 = setTimeout(() => setDotPhase(1), 1600)
+    const t2 = setTimeout(() => setDotPhase(2), 3600)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [isDotParade, state.spinSeed])
 
   const flashRef = useRef(null)
   useEffect(() => {
@@ -49,9 +61,13 @@ export default function Visualizer({ engine, director, showHUD }) {
 
   return (
     <div className="stage">
-      <div className="stage-inner" style={{ background: (isSplit || isQuiet || isTri2D) ? '#000' : palette.bg }}>
+      <div className="stage-inner" style={{
+        background: (isSplit || isQuiet || isTri2D || isDotParade) ? (isDotParade && dotPhase === 2 ? '#fff' : '#000') : palette.bg
+      }}>
         {isPolkaZoom ? (
           <PolkaZoom engine={engine} palette={palette} />
+        ) : isDotParade ? (
+          <DotReveal show={dotPhase === 0} />
         ) : isSplit ? (
           <>
             <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half="left" />
@@ -80,7 +96,7 @@ export default function Visualizer({ engine, director, showHUD }) {
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
           <directionalLight position={[-5, -3, -4]} intensity={0.4} color={palette.accent} />
 
-          <SceneSwitcher state={state} engine={engine} palette={palette} />
+          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} />
 
           <EffectComposer multisampling={0}>
             <Bloom

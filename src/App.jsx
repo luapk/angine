@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { AudioEngine } from './audio/AudioEngine.js'
 import { SceneDirector } from './scene/SceneDirector.js'
 import UploadScreen from './components/UploadScreen.jsx'
@@ -8,36 +8,23 @@ import DiceScreen from './components/DiceScreen.jsx'
 const DEFAULT_TRACK = '/audio/Sarniezz.mp3'
 
 export default function App() {
-  const [phase, setPhase] = useState('upload')   // 'upload' | 'loading' | 'ready' | 'playing'
-  const [status, setStatus] = useState('')
+  const [phase, setPhase] = useState('loading')  // auto-loads Sarniezz immediately
+  const [status, setStatus] = useState('LOADING…')
   const [showHUD, setShowHUD] = useState(false)
-  const [defaultFile, setDefaultFile] = useState(null)
 
   const engineRef = useRef(null)
   const directorRef = useRef(null)
 
-  // Initialise engine on first mount
   useEffect(() => {
     if (!engineRef.current) engineRef.current = new AudioEngine()
   }, [])
 
-  // Pre-fetch the default track so it's ready for one-click start
-  useEffect(() => {
-    fetch(DEFAULT_TRACK)
-      .then(r => r.ok ? r.blob() : null)
-      .then(blob => {
-        if (blob) setDefaultFile(new File([blob], 'Sarniezz.mp3', { type: 'audio/mpeg' }))
-      })
-      .catch(() => {})
-  }, [])
-
-  const handleLoad = async (file) => {
+  const handleLoad = useCallback(async (file) => {
     setPhase('loading')
     setStatus('READING FILE…')
     try {
       const engine = engineRef.current
       await engine.load(file, (msg) => setStatus(msg))
-      // Create director AFTER load so engine.bpm is populated
       directorRef.current = new SceneDirector(engine, {
         goldRarity: 0.07,
         minBarsPerScene: 1,
@@ -50,24 +37,36 @@ export default function App() {
       setStatus(`ERROR: ${err.message || 'failed to load'}`)
       setPhase('upload')
     }
-  }
+  }, [])
+
+  // Auto-load the default track on mount — skips the upload screen
+  useEffect(() => {
+    fetch(DEFAULT_TRACK)
+      .then(r => r.ok ? r.blob() : Promise.reject())
+      .then(blob => handleLoad(new File([blob], 'Sarniezz.mp3', { type: 'audio/mpeg' })))
+      .catch(() => setPhase('upload'))
+  }, [handleLoad])
 
   const handlePlay = () => {
     engineRef.current?.play()
     setPhase('playing')
   }
 
+  const handleUpload = () => setPhase('upload')
+
+  const handleReturn = () => {
+    engineRef.current?.stop()
+    directorRef.current?.destroy()
+    directorRef.current = null
+    setPhase('upload')
+    setStatus('')
+  }
+
   // Hotkeys
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'h' || e.key === 'H') setShowHUD((v) => !v)
-      if (e.key === 'Escape') {
-        engineRef.current?.stop()
-        directorRef.current?.destroy()
-        directorRef.current = null
-        setPhase('upload')
-        setStatus('')
-      }
+      if (e.key === 'h' || e.key === 'H') setShowHUD(v => !v)
+      if (e.key === 'Escape') handleReturn()
       if (e.key === 'f' || e.key === 'F') {
         const root = document.documentElement
         if (!document.fullscreenElement) root.requestFullscreen?.()
@@ -78,19 +77,39 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  if (phase === 'loading') {
+    return (
+      <div className="upload">
+        <div className="upload-inner" style={{ textAlign: 'center' }}>
+          <div className="brand-garamond">
+            ANGINE<br />DE<br />POITRINE
+            <span className="brand-garamond-sub">VISUAL ENGINE · V0.1</span>
+          </div>
+          <div className="status" style={{ marginTop: 24 }}>{status}</div>
+        </div>
+      </div>
+    )
+  }
+
   if (phase === 'ready' && engineRef.current && directorRef.current) {
-    return <DiceScreen bpm={engineRef.current.bpm} onPlay={handlePlay} />
+    return (
+      <DiceScreen
+        bpm={engineRef.current.bpm}
+        onPlay={handlePlay}
+        onUpload={handleUpload}
+      />
+    )
   }
 
   if (phase === 'playing' && engineRef.current && directorRef.current) {
     return <Visualizer engine={engineRef.current} director={directorRef.current} showHUD={showHUD} />
   }
 
+  // Upload screen — secondary option
   return (
     <UploadScreen
       onLoad={handleLoad}
       status={status}
-      defaultFile={defaultFile}
     />
   )
 }

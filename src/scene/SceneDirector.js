@@ -17,6 +17,7 @@ export const SCENES = Object.freeze({
   TRIANGLE_FIELD: 'TRIANGLE_FIELD',
   QUIET_TRIANGLE: 'QUIET_TRIANGLE',
   POLKA_ZOOM: 'POLKA_ZOOM',
+  DOT_PARADE: 'DOT_PARADE',
 })
 
 export const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
@@ -112,6 +113,8 @@ export class SceneDirector {
       this._cut(beat, { reason: 'tunnelLimit' })
       return
     }
+    // DOT_PARADE needs at least 2 bars to complete all 3 phases
+    if (this.state.scene === SCENES.DOT_PARADE && barsInScene < 2) return
 
     const recentPeak = (beat - this.state.lastPeakBeat) < 4   // peak within last bar
 
@@ -246,6 +249,7 @@ export class SceneDirector {
       { value: SCENES.TRIANGLE_POLAR, weight: triPolarW },
       { value: SCENES.TRIANGLE_FIELD, weight: triFieldW },
       { value: SCENES.POLKA_ZOOM,     weight: polkaZoomW },
+      { value: SCENES.DOT_PARADE,     weight: 1.6 },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes
