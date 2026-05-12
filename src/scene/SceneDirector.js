@@ -109,14 +109,13 @@ export class SceneDirector {
     const beat = this.engine.values.beat
     this.state.lastPeakBeat = beat
 
-    // Always flip palette on a real peak — instant, doesn't wait for bar
-    if (intensity > 0.4) {
-      this._flipPalette({ allowGold: true, intensity })
-    }
+    // Don't flip palette on peaks — rapid inversion causes blue colour cast on models
+    // Palette changes happen only on scene cuts
 
-    // If we're on the lead-in to a bar (within last quarter beat), force a tunnel cut
+    // If near a bar boundary, cut to tunnel — but only after current scene has had at least one bar
     const beatInBar = beat % 4
-    if (beatInBar > 3.5 || beatInBar < 0.15) {
+    const beatsInScene = beat - this.state.sceneStartBeat
+    if ((beatInBar > 3.5 || beatInBar < 0.15) && beatsInScene >= 3) {
       this._cutTo(SCENES.TUNNEL, beat, { reason: 'peakAtBar' })
     }
   }
@@ -194,7 +193,7 @@ export class SceneDirector {
     const twoUpW = 2.2
     const oneUpW = 2.0
     const splitW   = 1.8
-    const wordW    = 1.2   // occasional, not too frequent
+    const wordW    = 2.5
 
     const candidates = [
       { value: SCENES.TUNNEL,         weight: tunnelW },
