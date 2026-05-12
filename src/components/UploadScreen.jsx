@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 
-export default function UploadScreen({ onLoad, status }) {
+export default function UploadScreen({ onLoad, status, defaultFile }) {
   const [hot, setHot] = useState(false)
   const inputRef = useRef(null)
 
@@ -52,6 +52,17 @@ export default function UploadScreen({ onLoad, status }) {
           style={{ display: 'none' }}
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
+
+        {defaultFile && (
+          <div
+            className="dropzone"
+            style={{ marginTop: 12, borderStyle: 'solid', borderColor: 'var(--gold)', color: 'var(--gold)' }}
+            onClick={() => onLoad(defaultFile)}
+          >
+            ▶ SARNIEZZ.MP3
+            <span className="small" style={{ color: 'var(--gold)' }}>PLAY DEFAULT TRACK</span>
+          </div>
+        )}
 
         <div className="status">{status || ' '}</div>
       </div>

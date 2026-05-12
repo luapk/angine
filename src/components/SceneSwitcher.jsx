@@ -2,7 +2,11 @@ import { useMemo } from 'react'
 import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
 import TriangleTunnel from './TriangleTunnel.jsx'
-import { SCENES } from '../scene/SceneDirector.js'
+import { SCENES, PALETTES } from '../scene/SceneDirector.js'
+import { resolvePalette } from '../scene/palette.js'
+
+const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
+const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
 
 const URLS = {
   guitar: '/models/guitar.glb',
@@ -137,6 +141,78 @@ export default function SceneSwitcher({ state, engine, palette }) {
         </group>
       )
     }
+
+    case SCENES.SPLIT: {
+      const gap = 3.5
+      return (
+        <group key={`split-${spinSeed}`}>
+          <ReactiveObject
+            url={URLS.guitar}
+            engine={engine}
+            palette={SPLIT_LEFT}
+            position={[-gap, 0, 0]}
+            baseScale={6.8}
+            spinAxis={quirks.spinAxis}
+            spinDirection={quirks.direction}
+            spinSpeed={0.6}
+            reactiveBand="bassPunch"
+            punchAmount={0.38}
+            tilt={quirks.tiltA}
+            fallbackGeometry="sphere"
+          />
+          <ReactiveObject
+            url={URLS.drums}
+            engine={engine}
+            palette={SPLIT_RIGHT}
+            position={[gap, 0, 0]}
+            baseScale={6.8}
+            spinAxis={quirks.spinAxis}
+            spinDirection={-quirks.direction}
+            spinSpeed={0.6}
+            reactiveBand="bassPunch"
+            punchAmount={0.38}
+            tilt={quirks.tiltB}
+            fallbackGeometry="box"
+          />
+        </group>
+      )
+    }
+
+    case SCENES.CLOSEUP_GUITAR:
+      return (
+        <ReactiveObject
+          key={`cug-${spinSeed}`}
+          url={URLS.guitar}
+          engine={engine}
+          palette={palette}
+          position={[0, 0, 0]}
+          baseScale={12 * quirks.sizeMul}
+          spinAxis={quirks.heroAxis}
+          spinDirection={quirks.heroDir}
+          spinSpeed={quirks.heroSpeed * 0.2}
+          reactiveBand="bassPunch"
+          punchAmount={0.5}
+          fallbackGeometry="sphere"
+        />
+      )
+
+    case SCENES.CLOSEUP_DRUMS:
+      return (
+        <ReactiveObject
+          key={`cud-${spinSeed}`}
+          url={URLS.drums}
+          engine={engine}
+          palette={palette}
+          position={[0, 0, 0]}
+          baseScale={12 * quirks.sizeMul}
+          spinAxis={quirks.heroAxis}
+          spinDirection={-quirks.heroDir}
+          spinSpeed={quirks.heroSpeed * 0.2}
+          reactiveBand="bassPunch"
+          punchAmount={0.5}
+          fallbackGeometry="box"
+        />
+      )
 
     case SCENES.TWO_UP:
     default: {

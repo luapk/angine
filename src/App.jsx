@@ -4,10 +4,13 @@ import { SceneDirector } from './scene/SceneDirector.js'
 import UploadScreen from './components/UploadScreen.jsx'
 import Visualizer from './components/Visualizer.jsx'
 
+const DEFAULT_TRACK = '/audio/Sarniezz.mp3'
+
 export default function App() {
   const [phase, setPhase] = useState('upload')   // 'upload' | 'loading' | 'playing'
   const [status, setStatus] = useState('')
   const [showHUD, setShowHUD] = useState(false)
+  const [defaultFile, setDefaultFile] = useState(null)
 
   const engineRef = useRef(null)
   const directorRef = useRef(null)
@@ -15,6 +18,16 @@ export default function App() {
   // Initialise engine on first mount
   useEffect(() => {
     if (!engineRef.current) engineRef.current = new AudioEngine()
+  }, [])
+
+  // Pre-fetch the default track so it's ready for one-click start
+  useEffect(() => {
+    fetch(DEFAULT_TRACK)
+      .then(r => r.ok ? r.blob() : null)
+      .then(blob => {
+        if (blob) setDefaultFile(new File([blob], 'Sarniezz.mp3', { type: 'audio/mpeg' }))
+      })
+      .catch(() => {})
   }, [])
 
   const handleLoad = async (file) => {
@@ -66,5 +79,11 @@ export default function App() {
     return <Visualizer engine={engineRef.current} director={directorRef.current} showHUD={showHUD} />
   }
 
-  return <UploadScreen onLoad={handleLoad} status={status} />
+  return (
+    <UploadScreen
+      onLoad={handleLoad}
+      status={status}
+      defaultFile={defaultFile}
+    />
+  )
 }

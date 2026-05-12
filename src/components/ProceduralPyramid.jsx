@@ -38,43 +38,28 @@ export default function ProceduralPyramid({
   tilt = [0, 0, 0],
 }) {
   const group = useRef()
-  const innerGroup = useRef()
   const materialRef = useRef()
   const edgesMatRef = useRef()
-  const innerEdgesMatRef = useRef()
 
-  // Geometry: 4 radial segments + 1 height segment = square-base pyramid.
-  // Radius 0.5, height 0.85 → fits a unit sphere with the apex slightly above
-  // center. The slight tallness reads more "pyramid" than "square diamond".
   const coneGeom = useMemo(() => {
     const g = new THREE.ConeGeometry(0.5, 0.85, 4, 1)
-    // Re-center vertically (cone's pivot is mid-height by default — already centered, good)
-    g.computeVertexNormals()       // for flat shading we'd usually want this, but flatShading on material handles it
+    g.computeVertexNormals()
     return g
   }, [])
 
   const edgesGeom = useMemo(() => new THREE.EdgesGeometry(coneGeom, 1), [coneGeom])
 
-  // Inner pyramid — slightly smaller, just edges (no solid)
-  const innerEdgesGeom = useMemo(() => {
-    const g = new THREE.ConeGeometry(0.32, 0.55, 4, 1)
-    return new THREE.EdgesGeometry(g, 1)
-  }, [])
-
   useEffect(() => () => {
     coneGeom.dispose()
     edgesGeom.dispose()
-    innerEdgesGeom.dispose()
-  }, [coneGeom, edgesGeom, innerEdgesGeom])
+  }, [coneGeom, edgesGeom])
 
-  // Palette → material colors
   useEffect(() => {
     if (materialRef.current) {
       materialRef.current.color.set(palette.objectFg)
       materialRef.current.emissive.set(palette.pyramidEmissive || palette.objectEmissive)
     }
     if (edgesMatRef.current) edgesMatRef.current.color.set(palette.keyline)
-    if (innerEdgesMatRef.current) innerEdgesMatRef.current.color.set(palette.accent)
   }, [palette])
 
   useFrame((_, dt) => {
@@ -84,25 +69,15 @@ export default function ProceduralPyramid({
     const bass = v.bassPunch || 0
     const treble = v.treble || 0
 
-    // Outer spin
     const speed = spinSpeed * (1 + v.mid * 1.6) * spinDirection
     group.current.rotation[spinAxis] += speed * dt
 
-    // Treble jitter (consistent with ReactiveObject)
     group.current.rotation.x += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
     group.current.rotation.z += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
 
-    // Scale slam
     const s = baseScale * (1 + reactive * punchAmount)
     group.current.scale.set(s, s, s)
 
-    // Inner pyramid: counter-rotate on Y, faster, plus a slight tilt drift
-    if (innerGroup.current) {
-      innerGroup.current.rotation.y -= (1.4 + v.mid * 3.5) * dt * spinDirection
-      innerGroup.current.rotation.x = Math.sin(performance.now() * 0.001) * 0.18
-    }
-
-    // Emissive pulse — outer pyramid faces "breathe" with bass
     if (materialRef.current) {
       materialRef.current.emissiveIntensity = 0.35 + bass * 1.6
     }
@@ -110,7 +85,6 @@ export default function ProceduralPyramid({
 
   return (
     <group ref={group} position={position} rotation={tilt}>
-      {/* Outer solid pyramid — flat shading shows the 4 facets */}
       <mesh geometry={coneGeom}>
         <meshStandardMaterial
           ref={materialRef}
@@ -122,18 +96,9 @@ export default function ProceduralPyramid({
           metalness={0.2}
         />
       </mesh>
-
-      {/* Outer edge highlights — crisp keyline read */}
       <lineSegments geometry={edgesGeom}>
         <lineBasicMaterial ref={edgesMatRef} color={palette.keyline} linewidth={2} />
       </lineSegments>
-
-      {/* Inner counter-rotating wireframe pyramid */}
-      <group ref={innerGroup} rotation={[0, Math.PI / 4, 0]}>
-        <lineSegments geometry={innerEdgesGeom}>
-          <lineBasicMaterial ref={innerEdgesMatRef} color={palette.accent} linewidth={1} transparent opacity={0.85} />
-        </lineSegments>
-      </group>
     </group>
   )
 }

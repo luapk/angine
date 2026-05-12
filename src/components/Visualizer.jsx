@@ -1,42 +1,26 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { EffectComposer, Bloom, ChromaticAberration, Noise, Vignette } from '@react-three/postprocessing'
+import { Canvas } from '@react-three/fiber'
+import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import * as THREE from 'three'
 
 import PolkaBackground from './PolkaBackground.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
 import EngineTick from './EngineTick.jsx'
 import HUD from './HUD.jsx'
 import { resolvePalette } from '../scene/palette.js'
-import { SCENES } from '../scene/SceneDirector.js'
+import { SCENES, PALETTES } from '../scene/SceneDirector.js'
 
-// Drives chromatic aberration per frame. Sibling of EffectComposer (not a
-// child — composer extracts effect instances directly). Uses a stable Vector2
-// ref because postprocessing v2.16+ stores the offset prop as a raw array in
-// the uniform, so .set() would throw on target.current.offset directly.
-function ChromaUpdater({ engine, target }) {
-  const vec = useRef(new THREE.Vector2())
-  useFrame(() => {
-    if (!target.current) return
-    const t = engine.values.treble || 0
-    const b = engine.values.bassPunch || 0
-    const amount = 0.0008 + t * 0.006 + b * 0.003
-    vec.current.set(amount, amount * 0.6)
-    target.current.offset = vec.current
-  })
-  return null
-}
+const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
+const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
 
 export default function Visualizer({ engine, director, showHUD }) {
-  // Re-render when director changes scene/palette
   const [state, setState] = useState(director.state)
   useEffect(() => director.onChange((s) => setState({ ...s })), [director])
 
   const palette = useMemo(() => resolvePalette(state.palette), [state.palette])
   const isTunnel = state.scene === SCENES.TUNNEL
+  const isSplit  = state.scene === SCENES.SPLIT
 
-  // Invert-flash overlay on peaks
   const flashRef = useRef(null)
   useEffect(() => {
     const unsub = engine.onPeak((intensity) => {
@@ -48,12 +32,17 @@ export default function Visualizer({ engine, director, showHUD }) {
     return () => unsub?.()
   }, [engine])
 
-  const chromaRef = useRef()
-
   return (
     <div className="stage">
-      <div className="stage-inner" style={{ background: palette.bg }}>
-        {!isTunnel && <PolkaBackground engine={engine} palette={palette} />}
+      <div className="stage-inner" style={{ background: isSplit ? '#000' : palette.bg }}>
+        {isSplit ? (
+          <>
+            <PolkaBackground engine={engine} palette={SPLIT_LEFT}  half="left" />
+            <PolkaBackground engine={engine} palette={SPLIT_RIGHT} half="right" />
+          </>
+        ) : !isTunnel && (
+          <PolkaBackground engine={engine} palette={palette} />
+        )}
 
         <Canvas
           dpr={[1, 2]}
@@ -68,7 +57,6 @@ export default function Visualizer({ engine, director, showHUD }) {
           }}
         >
           <EngineTick engine={engine} />
-          <ChromaUpdater engine={engine} target={chromaRef} />
 
           <ambientLight intensity={0.7} />
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
@@ -82,13 +70,6 @@ export default function Visualizer({ engine, director, showHUD }) {
               luminanceThreshold={0.25}
               luminanceSmoothing={0.18}
               mipmapBlur
-            />
-            <ChromaticAberration
-              ref={chromaRef}
-              blendFunction={BlendFunction.NORMAL}
-              offset={[0.001, 0.0006]}
-              radialModulation={false}
-              modulationOffset={0}
             />
             <Noise opacity={0.05} blendFunction={BlendFunction.OVERLAY} />
             <Vignette eskil={false} offset={0.25} darkness={isTunnel ? 0.65 : 0.35} />

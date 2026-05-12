@@ -11,6 +11,9 @@ export const SCENES = Object.freeze({
   ONE_UP_DRUMS: 'ONE_UP_DRUMS',
   ONE_UP_PYRAMID: 'ONE_UP_PYRAMID',
   TUNNEL: 'TUNNEL',
+  SPLIT: 'SPLIT',
+  CLOSEUP_GUITAR: 'CLOSEUP_GUITAR',
+  CLOSEUP_DRUMS: 'CLOSEUP_DRUMS',
 })
 
 export const PALETTES = Object.freeze({
@@ -166,10 +169,12 @@ export class SceneDirector {
 
     const tunnelW = (recentPeak ? this.opts.tunnelPeakBoost : 1.0) *
                     (energy > 0.55 ? 2.5 : 0.6) *
-                    (cur === SCENES.TUNNEL ? 0.1 : 1.0)   // don't usually stay in tunnel
+                    (cur === SCENES.TUNNEL ? 0.1 : 1.0)
     const threeUpW = energy > 0.5 ? 2.5 : 1.0
     const twoUpW = 2.2
     const oneUpW = 2.0
+    const splitW = 1.8
+    const closeupW = energy > 0.6 ? 2.0 : 0.7   // close-ups suit high intensity
 
     const candidates = [
       { value: SCENES.TUNNEL,         weight: tunnelW },
@@ -178,7 +183,10 @@ export class SceneDirector {
       { value: SCENES.ONE_UP_GUITAR,  weight: oneUpW },
       { value: SCENES.ONE_UP_DRUMS,   weight: oneUpW },
       { value: SCENES.ONE_UP_PYRAMID, weight: isFourBar ? oneUpW * 1.5 : oneUpW * 0.7 },
-    ].filter(c => c.value !== cur)            // never repeat current
+      { value: SCENES.SPLIT,          weight: splitW },
+      { value: SCENES.CLOSEUP_GUITAR, weight: closeupW },
+      { value: SCENES.CLOSEUP_DRUMS,  weight: closeupW },
+    ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes
     for (const c of candidates) {
