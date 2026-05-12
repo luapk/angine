@@ -4,6 +4,7 @@ import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocess
 import { BlendFunction } from 'postprocessing'
 
 import PolkaBackground from './PolkaBackground.jsx'
+import PolkaZoom from './PolkaZoom.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
 import WordFlash from './WordFlash.jsx'
 import EngineTick from './EngineTick.jsx'
@@ -25,10 +26,15 @@ export default function Visualizer({ engine, director, showHUD }) {
   useEffect(() => director.onChange((s) => setState({ ...s })), [director])
 
   const palette   = useMemo(() => resolvePalette(state.palette), [state.palette])
-  const isTunnel  = state.scene === SCENES.TUNNEL
-  const isSplit   = state.scene === SCENES.SPLIT
-  const isWord    = state.scene === SCENES.WORD_FLASH
-  const isQuiet   = state.scene === SCENES.QUIET_TRIANGLE
+  const isTunnel    = state.scene === SCENES.TUNNEL
+  const isSplit     = state.scene === SCENES.SPLIT
+  const isWord      = state.scene === SCENES.WORD_FLASH
+  const isQuiet     = state.scene === SCENES.QUIET_TRIANGLE
+  const isTriPolar  = state.scene === SCENES.TRIANGLE_POLAR
+  const isTriField  = state.scene === SCENES.TRIANGLE_FIELD
+  const isPolkaZoom = state.scene === SCENES.POLKA_ZOOM
+  const isTri2D     = isTriPolar || isTriField
+  const splitFlip   = state.splitFlip
 
   const flashRef = useRef(null)
   useEffect(() => {
@@ -43,13 +49,15 @@ export default function Visualizer({ engine, director, showHUD }) {
 
   return (
     <div className="stage">
-      <div className="stage-inner" style={{ background: (isSplit || isQuiet) ? '#000' : palette.bg }}>
-        {isSplit ? (
+      <div className="stage-inner" style={{ background: (isSplit || isQuiet || isTri2D) ? '#000' : palette.bg }}>
+        {isPolkaZoom ? (
+          <PolkaZoom engine={engine} palette={palette} />
+        ) : isSplit ? (
           <>
-            <PolkaBackground engine={engine} palette={SPLIT_LEFT}  half="left" />
-            <PolkaBackground engine={engine} palette={SPLIT_RIGHT} half="right" />
+            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half="left" />
+            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_LEFT  : SPLIT_RIGHT} half="right" />
           </>
-        ) : (!isTunnel && !isQuiet) && (
+        ) : (!isTunnel && !isQuiet && !isTri2D) && (
           <PolkaBackground engine={engine} palette={palette} />
         )}
 
@@ -86,7 +94,7 @@ export default function Visualizer({ engine, director, showHUD }) {
           </EffectComposer>
         </Canvas>
 
-        {isWord && <WordFlash key={state.spinSeed} word={state.currentWord} palette={palette} />}
+        {isWord && <WordFlash key={state.spinSeed} words={state.currentWords} palette={palette} />}
 
         <div ref={flashRef} className="invert-flash" />
         <div className="grain" />
