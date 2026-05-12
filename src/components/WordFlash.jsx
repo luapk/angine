@@ -10,12 +10,14 @@ export default function WordFlash({ word, palette }) {
       textRef.current.style.fontSize = '100px'
       const cw = containerRef.current.offsetWidth
       const ch = containerRef.current.offsetHeight
-      const tw = textRef.current.offsetWidth
-      const th = textRef.current.offsetHeight
+      const tw = textRef.current.scrollWidth
+      const th = textRef.current.scrollHeight
       const scale = Math.min((cw / tw) * 0.92, (ch / th) * 0.85)
       textRef.current.style.fontSize = `${100 * scale}px`
     }
-    fit()
+
+    // Wait for EB Garamond to load before measuring, then fit
+    document.fonts.ready.then(fit)
     window.addEventListener('resize', fit)
     return () => window.removeEventListener('resize', fit)
   }, [word])
@@ -44,6 +46,7 @@ export default function WordFlash({ word, palette }) {
           letterSpacing: '-0.02em',
           whiteSpace: 'nowrap',
           userSelect: 'none',
+          fontSize: '100px',
         }}
       >
         {word}
