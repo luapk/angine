@@ -37,6 +37,17 @@ export default function UploadScreen({ onLoad, status, defaultFile }) {
           <span>SCENES</span><span><b>GENERATIVE</b> · WEIGHTED CUTS</span>
         </div>
 
+        {defaultFile && (
+          <div
+            className="dropzone"
+            style={{ borderStyle: 'solid', borderColor: 'var(--gold)', color: 'var(--gold)', marginBottom: 10 }}
+            onClick={() => onLoad(defaultFile)}
+          >
+            ▶ SARNIEZZ.MP3
+            <span className="small" style={{ color: 'var(--gold)' }}>PLAY DEFAULT TRACK</span>
+          </div>
+        )}
+
         <div
           className={'dropzone' + (hot ? ' hot' : '')}
           onClick={() => inputRef.current?.click()}
@@ -52,17 +63,6 @@ export default function UploadScreen({ onLoad, status, defaultFile }) {
           style={{ display: 'none' }}
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
-
-        {defaultFile && (
-          <div
-            className="dropzone"
-            style={{ marginTop: 12, borderStyle: 'solid', borderColor: 'var(--gold)', color: 'var(--gold)' }}
-            onClick={() => onLoad(defaultFile)}
-          >
-            ▶ SARNIEZZ.MP3
-            <span className="small" style={{ color: 'var(--gold)' }}>PLAY DEFAULT TRACK</span>
-          </div>
-        )}
 
         <div className="status">{status || ' '}</div>
       </div>
