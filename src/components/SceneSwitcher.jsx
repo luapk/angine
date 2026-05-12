@@ -40,6 +40,9 @@ export default function SceneSwitcher({ state, engine, palette }) {
   }, [spinSeed])
 
   switch (scene) {
+    case SCENES.WORD_FLASH:
+      return null   // text rendered as DOM overlay in Visualizer
+
     case SCENES.TUNNEL:
       return <TriangleTunnel key={`tun-${spinSeed}`} engine={engine} palette={palette} />
 
@@ -177,42 +180,6 @@ export default function SceneSwitcher({ state, engine, palette }) {
         </group>
       )
     }
-
-    case SCENES.CLOSEUP_GUITAR:
-      return (
-        <ReactiveObject
-          key={`cug-${spinSeed}`}
-          url={URLS.guitar}
-          engine={engine}
-          palette={palette}
-          position={[0, 0, 0]}
-          baseScale={12 * quirks.sizeMul}
-          spinAxis={quirks.heroAxis}
-          spinDirection={quirks.heroDir}
-          spinSpeed={quirks.heroSpeed * 0.2}
-          reactiveBand="bassPunch"
-          punchAmount={0.5}
-          fallbackGeometry="sphere"
-        />
-      )
-
-    case SCENES.CLOSEUP_DRUMS:
-      return (
-        <ReactiveObject
-          key={`cud-${spinSeed}`}
-          url={URLS.drums}
-          engine={engine}
-          palette={palette}
-          position={[0, 0, 0]}
-          baseScale={12 * quirks.sizeMul}
-          spinAxis={quirks.heroAxis}
-          spinDirection={-quirks.heroDir}
-          spinSpeed={quirks.heroSpeed * 0.2}
-          reactiveBand="bassPunch"
-          punchAmount={0.5}
-          fallbackGeometry="box"
-        />
-      )
 
     case SCENES.TWO_UP:
     default: {
