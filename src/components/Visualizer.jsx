@@ -48,21 +48,21 @@ export default function Visualizer({ engine, director, showHUD }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [isDotParade, state.spinSeed])
 
-  const flashRef = useRef(null)
+  // Hands flash: ~35% chance per scene cut, black bg + hands for 100-180ms
+  const [flashHands, setFlashHands] = useState(false)
+  const flashTimerRef = useRef(null)
   useEffect(() => {
-    const unsub = engine.onPeak((intensity) => {
-      if (!flashRef.current) return
-      flashRef.current.classList.add('on')
-      const dur = 90 + intensity * 140
-      setTimeout(() => flashRef.current?.classList.remove('on'), dur)
-    })
-    return () => unsub?.()
-  }, [engine])
+    if (Math.random() > 0.35) return
+    clearTimeout(flashTimerRef.current)
+    setFlashHands(true)
+    flashTimerRef.current = setTimeout(() => setFlashHands(false), 100 + Math.random() * 80)
+    return () => clearTimeout(flashTimerRef.current)
+  }, [state.spinSeed])
 
   return (
     <div className="stage">
       <div className="stage-inner" style={{
-        background: (isSplit || isQuiet || isTri2D || isDotParade) ? (isDotParade && dotPhase === 2 ? '#fff' : '#000') : palette.bg
+        background: flashHands ? '#000' : (isSplit || isQuiet || isTri2D || isDotParade) ? (isDotParade && dotPhase === 2 ? '#fff' : '#000') : palette.bg
       }}>
         {isPolkaZoom ? (
           <PolkaZoom engine={engine} palette={palette} />
@@ -96,7 +96,7 @@ export default function Visualizer({ engine, director, showHUD }) {
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
           <directionalLight position={[-5, -3, -4]} intensity={0.4} color={palette.accent} />
 
-          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} />
+          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} flashHands={flashHands} />
 
           <EffectComposer multisampling={0}>
             <Bloom
@@ -112,8 +112,16 @@ export default function Visualizer({ engine, director, showHUD }) {
 
         {isWord && <WordFlash key={state.spinSeed} words={state.currentWords} palette={palette} />}
 
-        <div ref={flashRef} className="invert-flash" />
         <div className="grain" />
+        <div style={{
+          position: 'absolute', top: 8, right: 8, zIndex: 200,
+          background: 'rgba(0,0,0,0.55)', color: '#fff',
+          fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em',
+          padding: '3px 7px', borderRadius: 3, pointerEvents: 'none',
+          opacity: 0.75,
+        }}>
+          {state.scene} · {state.palette}
+        </div>
 
         {showHUD && <HUD engine={engine} director={director} />}
         <div className="watermark">ANGINE DE POITRINE · {engine.bpm?.toFixed(0) ?? '—'} BPM</div>
