@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, Component } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
@@ -27,6 +27,23 @@ function CameraAdapt({ fov }) {
     camera.updateProjectionMatrix()
   }, [camera, fov])
   return null
+}
+
+// Isolates a crashing scene so it can't take down the whole Canvas. Renders
+// nothing on error (background still shows); resets when the scene cuts so the
+// next scene recovers automatically.
+class SceneErrorBoundary extends Component {
+  constructor(p) { super(p); this.state = { err: null } }
+  static getDerivedStateFromError(err) { return { err } }
+  componentDidCatch(err) {
+    console.error('[scene crash]', this.props.resetKey, err)
+  }
+  componentDidUpdate(prev) {
+    if (prev.resetKey !== this.props.resetKey && this.state.err) {
+      this.setState({ err: null })
+    }
+  }
+  render() { return this.state.err ? null : this.props.children }
 }
 
 const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
@@ -154,7 +171,9 @@ export default function Visualizer({ engine, director, showHUD }) {
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
           <directionalLight position={[-5, -3, -4]} intensity={0.4} color={palette.accent} />
 
-          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} flashHands={flashHands} portrait={portrait} />
+          <SceneErrorBoundary resetKey={`${state.scene}-${state.spinSeed}`}>
+            <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} flashHands={flashHands} portrait={portrait} />
+          </SceneErrorBoundary>
 
           <EffectComposer multisampling={0}>
             <Bloom

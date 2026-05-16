@@ -145,9 +145,9 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
       return mat
     }
     cloned.traverse(obj => {
-      if (obj.isMesh) {
+      if (obj.isMesh && obj.material) {
         obj.material = Array.isArray(obj.material)
-          ? obj.material.map(applyMat)
+          ? obj.material.filter(Boolean).map(applyMat)
           : applyMat(obj.material)
       }
     })
@@ -157,12 +157,13 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
     return { object: cloned, normalScale: s, centerOffset: center.multiplyScalar(-s) }
   }, [gltf])
 
-  const { actions } = useAnimations(gltf.animations, groupRef)
+  const clips = useMemo(() => gltf.animations || [], [gltf])
+  const { actions } = useAnimations(clips, groupRef)
 
   useEffect(() => {
-    const first = Object.values(actions)[0]
+    const first = Object.values(actions || {})[0]
     if (first) { first.reset().play() }
-    return () => { Object.values(actions).forEach(a => a?.stop()) }
+    return () => { Object.values(actions || {}).forEach(a => a?.stop()) }
   }, [actions])
 
   useFrame((_, dt) => {
