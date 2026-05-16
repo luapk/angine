@@ -85,18 +85,24 @@ export class SceneDirector {
   destroy() { this._unsubBeat?.(); this._unsubPeak?.() }
 
   _onBeat(beat, isBar, isFourBar) {
-    if (!isBar) return
-    this.state.barCount++
+    const energy = this.engine.values.overall
+    const beatInBar = Math.round(beat % 4)
+    // At high energy, also allow cuts on beat 2 (half-bar) for faster editing feel
+    const isHalfBar = !isBar && beatInBar === 2 && energy > 0.62
+
+    if (!isBar && !isHalfBar) return
+    if (isBar) this.state.barCount++
 
     const beatsInScene = beat - this.state.sceneStartBeat
     const barsInScene = beatsInScene / 4
-    const energy = this.engine.values.overall
 
     // Track consecutive quiet bars for quiet scene
-    if (energy < 0.15) {
-      this.state.quietBars = (this.state.quietBars || 0) + 1
-    } else {
-      this.state.quietBars = 0
+    if (isBar) {
+      if (energy < 0.15) {
+        this.state.quietBars = (this.state.quietBars || 0) + 1
+      } else {
+        this.state.quietBars = 0
+      }
     }
     // Trigger quiet triangle after 2 silent bars (only after track has been playing 8+ bars)
     if (this.state.quietBars >= 2 && this.state.barCount >= 8 && this.state.scene !== SCENES.QUIET_TRIANGLE) {
@@ -124,15 +130,17 @@ export class SceneDirector {
       return
     }
 
-    // Don't cut too often
-    if (barsInScene < this.opts.minBarsPerScene) return
+    // Minimum dwell: half-bar at high energy, full bar otherwise
+    const minDwell = energy > 0.62 ? 0.5 : this.opts.minBarsPerScene
+    if (barsInScene < minDwell) return
 
-    // Probability of cutting this bar
+    // Probability of cutting — energy weight raised so high-energy tracks cut faster
     let pCut = 0.18                            // base
     pCut += Math.min(0.4, barsInScene * 0.08)  // dwell penalty
-    pCut += energy * 0.25                       // energy pushes cuts
+    pCut += energy * 0.45                       // energy strongly pushes cuts (was 0.25)
     if (recentPeak) pCut += 0.5                // fresh peak → very likely to cut
     if (isFourBar) pCut += 0.15                // four-bar boundaries are natural cut points
+    if (isHalfBar) pCut *= 0.6                 // half-bar cuts more conservative than full-bar
 
     if (Math.random() < pCut) {
       this._cut(beat, { recentPeak, energy, isFourBar })
