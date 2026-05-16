@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 
-export default function UploadScreen({ onLoad, status, defaultFile }) {
+export default function UploadScreen({ onLoad, status }) {
   const [hot, setHot] = useState(false)
   const inputRef = useRef(null)
 
