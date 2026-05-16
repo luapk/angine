@@ -23,12 +23,9 @@ const URLS = {
 }
 
 const DANCER_URLS = [
-  '/models/Guitar__Clapping_Run_withSkin.glb',
-  '/models/Guitar__Jazz_Hands_withSkin.glb',
   '/models/Guitar_Cardio_Dance_withSkin.glb',
-  '/models/Guitar_Cheer_with_Both_Hands_withSkin.glb',
-  '/models/Guitar_Running_withSkin.glb',
   '/models/Guitar_Walking_withSkin.glb',
+  '/models/Guitar__Clapping_Run_withSkin.glb',
 ]
 
 function HandsGLB() {
@@ -110,38 +107,39 @@ function HandsZoomGLB() {
 }
 
 // Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
-// Use gltf.scene directly (each dancer URL is unique, never shared) and
-// play animations via useAnimations so the character holds its pose.
-function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
+// Transforms (scale + centering) are applied directly to the cloned Three.js
+// object so centering is reliable regardless of model origin placement.
+function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
   const groupRef = useRef()
   const gltf = useGLTF(url)
 
-  // SkeletonUtils.clone gives every mount its own independent skinned-mesh
-  // copy. Critical: rendering the cached gltf.scene via <primitive> lets R3F
-  // dispose it on unmount, so the NEXT GUITAR_DANCER cut got a dead scene
-  // (blank screen after ~a few appearances). The clone also avoids compounding
-  // the material/contrast mutation on every remount.
-  const { object, normalScale, centerOffset } = useMemo(() => {
-    if (!gltf?.scene) return { object: null, normalScale: 1, centerOffset: new THREE.Vector3() }
+  const object = useMemo(() => {
+    if (!gltf?.scene) return null
     const cloned = skeletonClone(gltf.scene)
+
+    // Scale to fit the viewport height so the full character is visible.
+    // landscape fov45 z=8 → ~6.6 tall; portrait fov72 → ~11.2 tall.
     const box = new THREE.Box3().setFromObject(cloned)
     const size = box.getSize(new THREE.Vector3())
-    const center = box.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    const targetH = portrait ? 9.0 : 5.5
+    const s = targetH / maxDim
+    cloned.scale.setScalar(s)
+
+    // Re-compute box in scaled space and shift root so centre is at origin.
+    const scaledBox = new THREE.Box3().setFromObject(cloned)
+    const center = scaledBox.getCenter(new THREE.Vector3())
+    cloned.position.sub(center)
+
+    // Clone materials so we don't corrupt the useGLTF cache, then push contrast.
     const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
-    // Clone materials too — SkeletonUtils.clone shares material refs with the
-    // cached scene, so mutating them in place would corrupt the cache.
     const applyMat = (m) => {
       const mat = m.clone()
       mat.metalness = 0
       mat.roughness = 0.8
       if (mat.emissive) mat.emissive.set('#000000')
       mat.emissiveIntensity = 0
-      // Push darks darker / lights lighter so the black suit + white hat
-      // read crisp instead of a flat washed grey
-      if (mat.color) {
-        mat.color.setRGB(contrast(mat.color.r), contrast(mat.color.g), contrast(mat.color.b))
-      }
+      if (mat.color) mat.color.setRGB(contrast(mat.color.r), contrast(mat.color.g), contrast(mat.color.b))
       return mat
     }
     cloned.traverse(obj => {
@@ -151,11 +149,9 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
           : applyMat(obj.material)
       }
     })
-    // Fixed scale (no per-cut sizeMul) → every dancer is the SAME size, and
-    // deliberately large: cropping in action poses is intended
-    const s = 8.5 / maxDim
-    return { object: cloned, normalScale: s, centerOffset: center.multiplyScalar(-s) }
-  }, [gltf])
+
+    return cloned
+  }, [gltf, portrait])
 
   const clips = useMemo(() => gltf.animations || [], [gltf])
   const { actions } = useAnimations(clips, groupRef)
@@ -174,11 +170,8 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
 
   if (!object) return null
   return (
-    // position y>0 puts model above eye level so camera reads as looking up;
-    // rotation.x negative tilts top away from camera — low-angle feel
-    <group ref={groupRef} position={[0, 0.6, 0]} rotation={[-0.18, 0, 0]}>
-      <primitive object={object} dispose={null} scale={normalScale}
-        position={[centerOffset.x, centerOffset.y, centerOffset.z]} />
+    <group ref={groupRef}>
+      <primitive object={object} dispose={null} />
     </group>
   )
 }
@@ -337,7 +330,6 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     }
 
     case SCENES.SPLIT: {
-      const gap = GAP_SPLIT
       const leftUrl  = splitFlip ? URLS.drums  : URLS.guitar
       const rightUrl = splitFlip ? URLS.guitar : URLS.drums
       const leftPal  = splitFlip ? SPLIT_RIGHT : SPLIT_LEFT
@@ -439,6 +431,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             spinDirection={quirks.heroDir}
             spinSpeed={quirks.heroSpeed * 0.5}
+            portrait={portrait}
           />
         </Suspense>
         </group>

@@ -213,7 +213,7 @@ export class SceneDirector {
     // For WORD_FLASH: pick a window of 2-3 consecutive words from the sequence,
     // starting after the previous appearance so we cycle through all of them.
     if (nextScene === SCENES.WORD_FLASH) {
-      const count = Math.random() < 0.5 ? 2 : 3
+      const count = 3
       const start = (this.state.lastWordIndex + 1 + Math.floor(Math.random() * 2)) % WORDS.length
       const words = []
       for (let i = 0; i < count; i++) words.push(WORDS[(start + i) % WORDS.length])
