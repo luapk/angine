@@ -56,7 +56,7 @@ export default function TriangleTunnel({ engine, palette }) {
     const t = elapsed.current
     const v = engine.values
 
-    // Quadratic ramp: ~8 u/s at t=0 → ~130 u/s at t=1.7s
+    // Quadratic speed ramp: ~8 u/s at t=0 → ~130 u/s at t=1.7s
     const speed = 8 + t * t * 46 + v.bassPunch * 7
 
     const totalDepth = RING_COUNT * RING_SPACING
@@ -64,6 +64,12 @@ export default function TriangleTunnel({ engine, palette }) {
       line.position.z += speed * dt
       if (line.position.z > 10) line.position.z -= totalDepth
     }
+
+    // Scale ramp: rings grow dramatically near end of 1-bar scene → "burst out" illusion
+    const barDuration = (4 * 60) / (engine.bpm || 120)
+    const tNorm = Math.min(t / barDuration, 1)
+    const scaleUp = 1 + Math.pow(tNorm, 2.5) * 6
+    group.current.scale.setScalar(scaleUp)
   })
 
   return (

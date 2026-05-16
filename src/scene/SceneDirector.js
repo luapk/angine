@@ -272,6 +272,12 @@ export class SceneDirector {
     return weightedPick(candidates)
   }
 
+  // Force an immediate scene change — used by dice button
+  forceCut() {
+    const beat = this.engine.values.beat
+    this._cut(beat, { energy: this.engine.values.overall, reason: 'dice' })
+  }
+
   // Called from useFrame for sub-bar reactive values (spin speed, scale jitter)
   // The visual layer reads state synchronously.
   read() { return this.state }

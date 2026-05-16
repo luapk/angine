@@ -130,6 +130,10 @@ export class AudioEngine {
     this.playing = false
   }
 
+  pause() { if (this.ctx?.state === 'running')   this.ctx.suspend() }
+  resume(){ if (this.ctx?.state === 'suspended') this.ctx.resume()  }
+  get isPaused() { return this.ctx?.state === 'suspended' }
+
   /** Hz → FFT bin index */
   _binFor(hz) {
     const nyquist = this.ctx.sampleRate / 2

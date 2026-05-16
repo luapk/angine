@@ -1,6 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
+import * as THREE from 'three'
 
 const GOLD = '#d4a017'
 const FLASH_PATTERN_MS = [60, 60, 60, 60, 60, 60]
@@ -25,6 +26,14 @@ export default function GoldPyramid({
 }) {
   const group = useRef()
 
+  const coneGeom = useMemo(() => {
+    const g = new THREE.ConeGeometry(0.5, 0.85, 4, 1)
+    g.computeVertexNormals()
+    return g
+  }, [])
+
+  useEffect(() => () => coneGeom.dispose(), [coneGeom])
+
   useEffect(() => {
     if (!group.current) return
     group.current.visible = false
@@ -46,13 +55,24 @@ export default function GoldPyramid({
     if (!group.current) return
     const v = engine.values
     const reactive = v[reactiveBand] || 0
-    group.current.rotation.x += spinSpeed * spinDirection * (1 + v.mid * 1.2) * dt
+    // Spin on Y (horizontal rotation like a top — no vertical tipping)
+    group.current.rotation.y += spinSpeed * spinDirection * (1 + v.mid * 1.2) * dt
     const s = baseScale * (1 + reactive * punchAmount)
     group.current.scale.set(s, s, s)
   })
 
   return (
     <group ref={group} position={position}>
+      <mesh geometry={coneGeom}>
+        <meshStandardMaterial
+          color={GOLD}
+          emissive={GOLD}
+          emissiveIntensity={0.25}
+          roughness={0.4}
+          metalness={0}
+          flatShading
+        />
+      </mesh>
       <Line points={BASE_LOOP} color={GOLD} lineWidth={3} />
       {BASE.map((b, i) => (
         <Line key={i} points={[APEX, b]} color={GOLD} lineWidth={3} />
