@@ -122,19 +122,21 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
     return () => { Object.values(actions).forEach(a => a?.stop()) }
   }, [actions])
 
-  const normalScale = useMemo(() => {
-    if (!gltf?.scene) return 1
+  const { normalScale, centerOffset } = useMemo(() => {
+    if (!gltf?.scene) return { normalScale: 1, centerOffset: new THREE.Vector3() }
     const box = new THREE.Box3().setFromObject(gltf.scene)
     const size = box.getSize(new THREE.Vector3())
+    const center = box.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
-    // Zero out metalness on load
     gltf.scene.traverse(obj => {
       if (obj.isMesh) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
         mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
       }
     })
-    return (4.0 * sizeMul) / maxDim
+    const s = (4.0 * sizeMul) / maxDim
+    // Negate center so model origin sits at group origin (vertically centered)
+    return { normalScale: s, centerOffset: center.multiplyScalar(-s) }
   }, [gltf, sizeMul])
 
   useFrame((_, dt) => {
@@ -145,8 +147,9 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
 
   if (!gltf?.scene) return null
   return (
-    <group ref={groupRef} position={[0, -1.0, 0]} rotation={[0.3, 0, 0]}>
-      <primitive object={gltf.scene} scale={normalScale} />
+    <group ref={groupRef} position={[0, -0.3, 0]} rotation={[0.2, 0, 0]}>
+      <primitive object={gltf.scene} scale={normalScale}
+        position={[centerOffset.x, centerOffset.y, centerOffset.z]} />
     </group>
   )
 }
@@ -371,8 +374,16 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
 
     case SCENES.GUITAR_DANCER: {
       const dancerIdx = Math.floor(spinSeed) % DANCER_URLS.length
+      const dancerFallback = (
+        <ProceduralPyramid
+          engine={engine} palette={palette}
+          position={[0, 0, 0]} baseScale={3.2}
+          spinAxis="y" spinDirection={quirks.heroDir} spinSpeed={1.0}
+          reactiveBand="overall" punchAmount={0.2}
+        />
+      )
       return (
-        <Suspense key={`dancer-${spinSeed}`} fallback={null}>
+        <Suspense key={`dancer-${spinSeed}`} fallback={dancerFallback}>
           <DancerGLB
             url={DANCER_URLS[dancerIdx]}
             engine={engine}

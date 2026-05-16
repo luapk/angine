@@ -285,7 +285,7 @@ export class SceneDirector {
       { value: SCENES.TRIANGLE_POLAR,  weight: triPolarW },
       { value: SCENES.POLKA_ZOOM,      weight: polkaZoomW },
       { value: SCENES.DOT_PARADE,      weight: 1.6 },
-      { value: SCENES.GUITAR_DANCER,   weight: 2.2 },
+      { value: SCENES.GUITAR_DANCER,   weight: 3.5 },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes
