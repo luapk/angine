@@ -12,6 +12,8 @@ import * as THREE from 'three'
  */
 
 function useReactiveTransform({ ref, engine, baseScale, spinAxis, spinDirection, spinSpeed, reactiveBand, punchAmount, trebleWobble }) {
+  const jitter = useRef({ x: 0, z: 0 })
+
   useFrame((_, dt) => {
     if (!ref.current) return
     const v = engine.values
@@ -21,8 +23,14 @@ function useReactiveTransform({ ref, engine, baseScale, spinAxis, spinDirection,
     const speed = spinSpeed * (1 + v.mid * 1.6) * spinDirection
     ref.current.rotation[spinAxis] += speed * dt
 
-    ref.current.rotation.x += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
-    ref.current.rotation.z += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
+    // Smooth the wobble — lerp toward a new random target each frame so
+    // rotation changes are organic rather than per-frame jitter
+    const wX = (Math.random() - 0.5) * treble * trebleWobble
+    const wZ = (Math.random() - 0.5) * treble * trebleWobble
+    jitter.current.x += (wX - jitter.current.x) * 0.1
+    jitter.current.z += (wZ - jitter.current.z) * 0.1
+    ref.current.rotation.x += jitter.current.x * dt * 60
+    ref.current.rotation.z += jitter.current.z * dt * 60
 
     // Never rotate past ±45° on Z
     const Z_LIMIT = Math.PI / 4

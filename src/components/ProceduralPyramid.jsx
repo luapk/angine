@@ -40,6 +40,7 @@ export default function ProceduralPyramid({
   const group = useRef()
   const materialRef = useRef()
   const edgesMatRef = useRef()
+  const jitter = useRef({ x: 0, z: 0 })
 
   const coneGeom = useMemo(() => {
     const g = new THREE.ConeGeometry(0.5, 0.85, 4, 1)
@@ -72,8 +73,12 @@ export default function ProceduralPyramid({
     const speed = spinSpeed * (1 + v.mid * 1.6) * spinDirection
     group.current.rotation[spinAxis] += speed * dt
 
-    group.current.rotation.x += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
-    group.current.rotation.z += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
+    const wX = (Math.random() - 0.5) * treble * trebleWobble
+    const wZ = (Math.random() - 0.5) * treble * trebleWobble
+    jitter.current.x += (wX - jitter.current.x) * 0.1
+    jitter.current.z += (wZ - jitter.current.z) * 0.1
+    group.current.rotation.x += jitter.current.x * dt * 60
+    group.current.rotation.z += jitter.current.z * dt * 60
 
     const s = baseScale * (1 + reactive * punchAmount)
     group.current.scale.set(s, s, s)

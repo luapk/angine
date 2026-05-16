@@ -23,6 +23,7 @@ const URLS = {
 
 function HandsGLB() {
   const group = useRef()
+  const elapsedRef = useRef(0)
   const gltf = useGLTF('/models/hands.glb')
   const scene = useMemo(() => {
     if (!gltf?.scene) return null
@@ -42,7 +43,13 @@ function HandsGLB() {
     return cloned
   }, [gltf])
   useFrame((_, dt) => {
-    if (group.current) group.current.rotation.y += dt * 2.2
+    if (!group.current) return
+    elapsedRef.current += dt
+    const t = elapsedRef.current
+    // Crash in at 2.5×, spring-bounce back to 1× with oscillation
+    const bounce = 1 + 1.5 * Math.exp(-t * 9) * (1 + 0.4 * Math.sin(t * 22))
+    group.current.scale.setScalar(bounce)
+    group.current.rotation.y += dt * 2.2
   })
   if (!scene) return null
   return <group ref={group}><primitive object={scene} /></group>

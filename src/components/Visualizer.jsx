@@ -49,7 +49,7 @@ export default function Visualizer({ engine, director, showHUD }) {
   const isTriPolar  = state.scene === SCENES.TRIANGLE_POLAR
   const isPolkaZoom  = state.scene === SCENES.POLKA_ZOOM
   const isDotParade  = state.scene === SCENES.DOT_PARADE
-  const isTri2D      = isTriPolar
+  const isTri2D      = false
   const splitFlip    = state.splitFlip
 
   // DOT_PARADE internal phase: 0=dots, 1=guitar grid, 2=drums grid (white bg)
