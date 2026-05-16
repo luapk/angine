@@ -131,11 +131,16 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
     gltf.scene.traverse(obj => {
       if (obj.isMesh) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-        mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
+        mats.forEach(mat => {
+          mat.metalness = 0
+          mat.roughness = 0.85
+          // Force near-black so character reads as bold silhouette on white bg
+          if (mat.color) mat.color.set('#0d0d0d')
+          if (mat.emissive) mat.emissive.set('#000000')
+        })
       }
     })
-    const s = (4.0 * sizeMul) / maxDim
-    // Negate center so model origin sits at group origin (vertically centered)
+    const s = (6.0 * sizeMul) / maxDim   // 50% bigger than before
     return { normalScale: s, centerOffset: center.multiplyScalar(-s) }
   }, [gltf, sizeMul])
 
@@ -147,7 +152,9 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
 
   if (!gltf?.scene) return null
   return (
-    <group ref={groupRef} position={[0, -0.3, 0]} rotation={[0.2, 0, 0]}>
+    // position y>0 puts model above eye level so camera reads as looking up;
+    // rotation.x negative tilts top away from camera — low-angle feel
+    <group ref={groupRef} position={[0, 0.6, 0]} rotation={[-0.18, 0, 0]}>
       <primitive object={gltf.scene} scale={normalScale}
         position={[centerOffset.x, centerOffset.y, centerOffset.z]} />
     </group>
