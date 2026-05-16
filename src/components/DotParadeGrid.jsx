@@ -88,7 +88,7 @@ function GridInner({ url, engine }) {
           ref={(el) => { refs.current[i] = el }}
           position={[x, y, z]}
         >
-          <primitive object={clones[i]} />
+          <primitive object={clones[i]} dispose={null} />
         </group>
       ))}
     </>

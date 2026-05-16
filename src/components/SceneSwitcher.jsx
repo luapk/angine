@@ -62,7 +62,7 @@ function HandsGLB() {
     group.current.rotation.y = 0.175 * Math.sin(t * 1.8)
   })
   if (!scene) return null
-  return <group ref={group}><primitive object={scene} /></group>
+  return <group ref={group}><primitive object={scene} dispose={null} /></group>
 }
 
 function HandsDisplay() {
@@ -106,7 +106,7 @@ function HandsZoomGLB() {
   })
 
   if (!scene) return null
-  return <group ref={group}><primitive object={scene} /></group>
+  return <group ref={group}><primitive object={scene} dispose={null} /></group>
 }
 
 // Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
@@ -176,7 +176,7 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
     // position y>0 puts model above eye level so camera reads as looking up;
     // rotation.x negative tilts top away from camera — low-angle feel
     <group ref={groupRef} position={[0, 0.6, 0]} rotation={[-0.18, 0, 0]}>
-      <primitive object={object} scale={normalScale}
+      <primitive object={object} dispose={null} scale={normalScale}
         position={[centerOffset.x, centerOffset.y, centerOffset.z]} />
     </group>
   )

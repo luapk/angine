@@ -72,7 +72,10 @@ function GLBObject(props) {
   if (!scene) return null
   return (
     <group ref={group} position={position} rotation={tilt}>
-      <primitive object={scene} />
+      {/* dispose={null}: scene is a clone(true) that SHARES geometry/material
+          refs with the useGLTF cache. Letting R3F dispose on unmount would
+          destroy the cached resources → every later GLB scene renders black. */}
+      <primitive object={scene} dispose={null} />
     </group>
   )
 }

@@ -135,17 +135,19 @@ export class SceneDirector {
       return
     }
 
-    // Minimum dwell: half-bar at high energy, full bar otherwise
-    const minDwell = energy > 0.62 ? 0.5 : this.opts.minBarsPerScene
+    // Minimum dwell: ~3 beats at high energy (avoids frantic sub-bar strobing
+    // while staying lively), full bar otherwise
+    const minDwell = energy > 0.62 ? 0.75 : this.opts.minBarsPerScene
     if (barsInScene < minDwell) return
 
-    // Probability of cutting — energy weight raised so high-energy tracks cut faster
+    // Probability of cutting — cuts track musical structure (bars + peaks)
+    // more than raw loudness so the cadence feels deliberate
     let pCut = 0.18                            // base
     pCut += Math.min(0.4, barsInScene * 0.08)  // dwell penalty
-    pCut += energy * 0.45                       // energy strongly pushes cuts (was 0.25)
+    pCut += energy * 0.38                       // energy nudges, doesn't dominate
     if (recentPeak) pCut += 0.5                // fresh peak → very likely to cut
-    if (isFourBar) pCut += 0.15                // four-bar boundaries are natural cut points
-    if (isHalfBar) pCut *= 0.6                 // half-bar cuts more conservative than full-bar
+    if (isFourBar) pCut += 0.22                // 4-bar phrase boundaries: strong cut point
+    if (isHalfBar) pCut *= 0.55                // half-bar cuts kept conservative
 
     if (Math.random() < pCut) {
       this._cut(beat, { recentPeak, energy, isFourBar })

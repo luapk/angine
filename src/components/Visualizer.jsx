@@ -49,13 +49,25 @@ export default function Visualizer({ engine, director, showHUD }) {
   const [state, setState] = useState(director.state)
   useEffect(() => director.onChange((s) => setState({ ...s })), [director])
 
-  const [portrait, setPortrait] = useState(() => window.innerHeight > window.innerWidth)
+  // matchMedia is reliable on mobile; innerWidth/innerHeight are flaky during
+  // load (URL-bar collapse, orientation settle).
+  const [portrait, setPortrait] = useState(
+    () => window.matchMedia('(orientation: portrait)').matches
+  )
   useEffect(() => {
-    const h = () => setPortrait(window.innerHeight > window.innerWidth)
+    const mq = window.matchMedia('(orientation: portrait)')
+    const h = () => setPortrait(mq.matches)
+    h()
+    mq.addEventListener('change', h)
     window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
+    window.addEventListener('orientationchange', h)
+    return () => {
+      mq.removeEventListener('change', h)
+      window.removeEventListener('resize', h)
+      window.removeEventListener('orientationchange', h)
+    }
   }, [])
-  const cameraFov = portrait ? 70 : 45
+  const cameraFov = portrait ? 72 : 45
 
   const palette   = useMemo(() => resolvePalette(state.palette), [state.palette])
   const isTunnel    = state.scene === SCENES.TUNNEL
