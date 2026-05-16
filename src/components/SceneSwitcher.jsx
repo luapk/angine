@@ -72,6 +72,42 @@ function HandsDisplay() {
   )
 }
 
+// Peak-triggered hands scene: slow crash-zoom toward camera, no rotation
+function HandsZoomGLB() {
+  const group = useRef()
+  const elapsedRef = useRef(0)
+  const gltf = useGLTF('/models/hands.glb')
+  const scene = useMemo(() => {
+    if (!gltf?.scene) return null
+    const cloned = gltf.scene.clone(true)
+    const box = new THREE.Box3().setFromObject(cloned)
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    cloned.scale.setScalar(9.0 / maxDim)
+    const center = box.getCenter(new THREE.Vector3())
+    cloned.position.sub(center.multiplyScalar(9.0 / maxDim))
+    cloned.traverse(obj => {
+      if (obj.isMesh) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
+      }
+    })
+    return cloned
+  }, [gltf])
+
+  useFrame((_, dt) => {
+    if (!group.current) return
+    elapsedRef.current += dt
+    // Linear zoom: starts filling screen, crashes closer over ~1 second
+    const s = 1.1 + elapsedRef.current * 1.2
+    group.current.scale.setScalar(s)
+    // No rotation
+  })
+
+  if (!scene) return null
+  return <group ref={group}><primitive object={scene} /></group>
+}
+
 /**
  * Picks the scene tree based on director state.
  * Keyed on scene + spinSeed so each cut remounts → hard cut feel.
@@ -99,6 +135,13 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
   if (flashHands) return <HandsDisplay key="hands-flash" />
 
   switch (scene) {
+    case SCENES.HANDS_ZOOM:
+      return (
+        <Suspense fallback={null}>
+          <HandsZoomGLB key={`hz-${spinSeed}`} />
+        </Suspense>
+      )
+
     case SCENES.WORD_FLASH:
       return null   // text rendered as DOM overlay in Visualizer
 

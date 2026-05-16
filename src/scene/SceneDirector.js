@@ -18,6 +18,7 @@ export const SCENES = Object.freeze({
   POLKA_ZOOM: 'POLKA_ZOOM',
   DOT_PARADE: 'DOT_PARADE',
   GUITAR_DANCER: 'GUITAR_DANCER',
+  HANDS_ZOOM: 'HANDS_ZOOM',
 })
 
 export const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
@@ -87,14 +88,18 @@ export class SceneDirector {
   _onBeat(beat, isBar, isFourBar) {
     const energy = this.engine.values.overall
     const beatInBar = Math.round(beat % 4)
-    // At high energy, also allow cuts on beat 2 (half-bar) for faster editing feel
     const isHalfBar = !isBar && beatInBar === 2 && energy > 0.62
+    const beatsInScene = beat - this.state.sceneStartBeat
+    const barsInScene = beatsInScene / 4
+
+    // HANDS_ZOOM exits after exactly 2 beats — checked on every beat event
+    if (this.state.scene === SCENES.HANDS_ZOOM && beatsInScene >= 2) {
+      this._cut(beat, { reason: 'handsZoomLimit' })
+      return
+    }
 
     if (!isBar && !isHalfBar) return
     if (isBar) this.state.barCount++
-
-    const beatsInScene = beat - this.state.sceneStartBeat
-    const barsInScene = beatsInScene / 4
 
     // Track consecutive quiet bars for quiet scene
     if (isBar) {
@@ -151,14 +156,16 @@ export class SceneDirector {
     const beat = this.engine.values.beat
     this.state.lastPeakBeat = beat
 
-    // Don't flip palette on peaks — rapid inversion causes blue colour cast on models
-    // Palette changes happen only on scene cuts
-
-    // If near a bar boundary, cut to tunnel — but only after current scene has had at least one bar
     const beatInBar = beat % 4
     const beatsInScene = beat - this.state.sceneStartBeat
     if ((beatInBar > 3.5 || beatInBar < 0.15) && beatsInScene >= 3) {
-      this._cutTo(SCENES.TUNNEL, beat, { reason: 'peakAtBar' })
+      const r = Math.random()
+      if (r < 0.20) {
+        this._cutTo(SCENES.TUNNEL, beat, { reason: 'peakAtBar' })
+      } else if (r < 0.65) {
+        this._cutTo(SCENES.HANDS_ZOOM, beat, { reason: 'peakHands' })
+      }
+      // else: ~35% of peaks fall through to normal beat logic
     }
   }
 
@@ -234,6 +241,13 @@ export class SceneDirector {
       return
     }
 
+    // Hands zoom: black bg, no polka
+    if (nextScene === SCENES.HANDS_ZOOM) {
+      this.state.palette = PALETTES.WHITE_ON_BLACK
+      this._emit()
+      return
+    }
+
     // ~40% of cuts also flip the palette; peak cuts almost always do
     const pPaletteFlip = ctx.recentPeak ? 0.85 : 0.35
     if (Math.random() < pPaletteFlip) {
@@ -247,8 +261,9 @@ export class SceneDirector {
     const recent = new Set(this.state.recentScenes)
     const cur = this.state.scene
 
-    const tunnelW = (recentPeak ? this.opts.tunnelPeakBoost * 0.5 : 0.5) *
-                    (energy > 0.55 ? 1.2 : 0.3) *
+    // Tunnel kept rare — peaks now mostly trigger HANDS_ZOOM instead
+    const tunnelW = (recentPeak ? 0.4 : 0.1) *
+                    (energy > 0.55 ? 1.0 : 0.2) *
                     (cur === SCENES.TUNNEL ? 0.0 : 1.0)
     const threeUpW = energy > 0.5 ? 2.5 : 1.0
     const twoUpW = 2.2
