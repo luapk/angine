@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { Suspense } from 'react'
 import * as THREE from 'three'
+import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
 import GoldPyramid from './GoldPyramid.jsx'
@@ -114,6 +115,48 @@ function HandsZoomGLB() {
 function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
   const groupRef = useRef()
   const gltf = useGLTF(url)
+
+  // SkeletonUtils.clone gives every mount its own independent skinned-mesh
+  // copy. Critical: rendering the cached gltf.scene via <primitive> lets R3F
+  // dispose it on unmount, so the NEXT GUITAR_DANCER cut got a dead scene
+  // (blank screen after ~a few appearances). The clone also avoids compounding
+  // the material/contrast mutation on every remount.
+  const { object, normalScale, centerOffset } = useMemo(() => {
+    if (!gltf?.scene) return { object: null, normalScale: 1, centerOffset: new THREE.Vector3() }
+    const cloned = skeletonClone(gltf.scene)
+    const box = new THREE.Box3().setFromObject(cloned)
+    const size = box.getSize(new THREE.Vector3())
+    const center = box.getCenter(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
+    // Clone materials too — SkeletonUtils.clone shares material refs with the
+    // cached scene, so mutating them in place would corrupt the cache.
+    const applyMat = (m) => {
+      const mat = m.clone()
+      mat.metalness = 0
+      mat.roughness = 0.8
+      if (mat.emissive) mat.emissive.set('#000000')
+      mat.emissiveIntensity = 0
+      // Push darks darker / lights lighter so the black suit + white hat
+      // read crisp instead of a flat washed grey
+      if (mat.color) {
+        mat.color.setRGB(contrast(mat.color.r), contrast(mat.color.g), contrast(mat.color.b))
+      }
+      return mat
+    }
+    cloned.traverse(obj => {
+      if (obj.isMesh) {
+        obj.material = Array.isArray(obj.material)
+          ? obj.material.map(applyMat)
+          : applyMat(obj.material)
+      }
+    })
+    // Fixed scale (no per-cut sizeMul) → every dancer is the SAME size, and
+    // deliberately large: cropping in action poses is intended
+    const s = 8.5 / maxDim
+    return { object: cloned, normalScale: s, centerOffset: center.multiplyScalar(-s) }
+  }, [gltf])
+
   const { actions } = useAnimations(gltf.animations, groupRef)
 
   useEffect(() => {
@@ -122,47 +165,18 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
     return () => { Object.values(actions).forEach(a => a?.stop()) }
   }, [actions])
 
-  const { normalScale, centerOffset } = useMemo(() => {
-    if (!gltf?.scene) return { normalScale: 1, centerOffset: new THREE.Vector3() }
-    const box = new THREE.Box3().setFromObject(gltf.scene)
-    const size = box.getSize(new THREE.Vector3())
-    const center = box.getCenter(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
-    const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
-    gltf.scene.traverse(obj => {
-      if (obj.isMesh) {
-        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-        mats.forEach(mat => {
-          mat.metalness = 0
-          mat.roughness = 0.8
-          if (mat.emissive) mat.emissive.set('#000000')
-          mat.emissiveIntensity = 0
-          // Push darks darker / lights lighter so the black suit + white hat
-          // read crisp instead of a flat washed grey
-          if (mat.color) {
-            mat.color.setRGB(contrast(mat.color.r), contrast(mat.color.g), contrast(mat.color.b))
-          }
-        })
-      }
-    })
-    // Fixed scale (no per-cut sizeMul) → every dancer is the SAME size, and
-    // deliberately large: cropping in action poses is intended
-    const s = 8.5 / maxDim
-    return { normalScale: s, centerOffset: center.multiplyScalar(-s) }
-  }, [gltf])
-
   useFrame((_, dt) => {
     if (!groupRef.current) return
     const v = engine.values
     groupRef.current.rotation.y += spinDirection * spinSpeed * (1 + v.mid * 0.6) * dt
   })
 
-  if (!gltf?.scene) return null
+  if (!object) return null
   return (
     // position y>0 puts model above eye level so camera reads as looking up;
     // rotation.x negative tilts top away from camera — low-angle feel
     <group ref={groupRef} position={[0, 0.6, 0]} rotation={[-0.18, 0, 0]}>
-      <primitive object={gltf.scene} scale={normalScale}
+      <primitive object={object} scale={normalScale}
         position={[centerOffset.x, centerOffset.y, centerOffset.z]} />
     </group>
   )
