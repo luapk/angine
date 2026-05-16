@@ -134,8 +134,6 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
         mats.forEach(mat => {
           mat.metalness = 0
           mat.roughness = 0.8
-          // Darken original colours ~55% — enough contrast on white without silhouette
-          if (mat.color) mat.color.multiplyScalar(0.45)
           if (mat.emissive) mat.emissive.set('#000000')
           mat.emissiveIntensity = 0
         })
