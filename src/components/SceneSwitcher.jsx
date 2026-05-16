@@ -21,6 +21,15 @@ const URLS = {
   drums:  '/models/drums.glb',
 }
 
+const DANCER_URLS = [
+  '/models/Guitar__Clapping_Run_withSkin.glb',
+  '/models/Guitar__Jazz_Hands_withSkin.glb',
+  '/models/Guitar_Cardio_Dance_withSkin.glb',
+  '/models/Guitar_Cheer_with_Both_Hands_withSkin.glb',
+  '/models/Guitar_Running_withSkin.glb',
+  '/models/Guitar_Walking_withSkin.glb',
+]
+
 function HandsGLB() {
   const group = useRef()
   const elapsedRef = useRef(0)
@@ -272,6 +281,29 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
           reactiveBand="bassPunch"
           punchAmount={0.28}
           fallbackGeometry={heroPick === 1 ? 'sphere' : 'box'}
+        />
+      )
+    }
+
+    case SCENES.GUITAR_DANCER: {
+      const dancerIdx = Math.floor(spinSeed) % DANCER_URLS.length
+      const dancerDir = quirks.heroDir
+      return (
+        <ReactiveObject
+          key={`dancer-${spinSeed}`}
+          url={DANCER_URLS[dancerIdx]}
+          engine={engine}
+          palette={palette}
+          position={[0, -1.0, 0]}
+          baseScale={4.0 * quirks.sizeMul}
+          spinAxis="y"
+          spinDirection={dancerDir}
+          spinSpeed={quirks.heroSpeed * 0.6}
+          reactiveBand="overall"
+          punchAmount={0.18}
+          trebleWobble={0.02}
+          tilt={[0.3, 0, 0]}
+          fallbackGeometry="sphere"
         />
       )
     }

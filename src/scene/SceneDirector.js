@@ -17,6 +17,7 @@ export const SCENES = Object.freeze({
   QUIET_TRIANGLE: 'QUIET_TRIANGLE',
   POLKA_ZOOM: 'POLKA_ZOOM',
   DOT_PARADE: 'DOT_PARADE',
+  GUITAR_DANCER: 'GUITAR_DANCER',
 })
 
 export const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
@@ -226,6 +227,13 @@ export class SceneDirector {
       return
     }
 
+    // Dancer always black-on-white (black character on white polka bg)
+    if (nextScene === SCENES.GUITAR_DANCER) {
+      this.state.palette = PALETTES.BLACK_ON_WHITE
+      this._emit()
+      return
+    }
+
     // ~40% of cuts also flip the palette; peak cuts almost always do
     const pPaletteFlip = ctx.recentPeak ? 0.85 : 0.35
     if (Math.random() < pPaletteFlip) {
@@ -259,9 +267,10 @@ export class SceneDirector {
       { value: SCENES.ONE_UP_PYRAMID, weight: isFourBar ? oneUpW * 1.5 : oneUpW * 0.7 },
       { value: SCENES.SPLIT,          weight: splitW },
       { value: SCENES.WORD_FLASH,     weight: wordW },
-      { value: SCENES.TRIANGLE_POLAR, weight: triPolarW },
-      { value: SCENES.POLKA_ZOOM,     weight: polkaZoomW },
-      { value: SCENES.DOT_PARADE,     weight: 1.6 },
+      { value: SCENES.TRIANGLE_POLAR,  weight: triPolarW },
+      { value: SCENES.POLKA_ZOOM,      weight: polkaZoomW },
+      { value: SCENES.DOT_PARADE,      weight: 1.6 },
+      { value: SCENES.GUITAR_DANCER,   weight: 2.2 },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes

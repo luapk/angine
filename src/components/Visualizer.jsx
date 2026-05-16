@@ -10,6 +10,7 @@ import SceneSwitcher from './SceneSwitcher.jsx'
 import WordFlash from './WordFlash.jsx'
 import EngineTick from './EngineTick.jsx'
 import HUD from './HUD.jsx'
+import DiceButton3D from './DiceButton3D.jsx'
 import { resolvePalette } from '../scene/palette.js'
 import { SCENES, PALETTES } from '../scene/SceneDirector.js'
 
@@ -21,8 +22,6 @@ function DisableACES() {
 
 const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
 const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
-
-const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
 
 const BTN = {
   background: 'rgba(0,0,0,0.5)',
@@ -83,10 +82,7 @@ export default function Visualizer({ engine, director, showHUD }) {
     else        { engine.pause();  setPaused(true)  }
   }, [engine, paused])
 
-  // Dice — force a scene cut
-  const [dieFace, setDieFace] = useState('⚄')
   const rollDice = useCallback(() => {
-    setDieFace(DIE_FACES[Math.floor(Math.random() * 6)])
     director.forceCut()
   }, [director])
 
@@ -164,9 +160,7 @@ export default function Visualizer({ engine, director, showHUD }) {
           <button onClick={togglePlay} style={BTN} title="Pause / Play">
             {paused ? '▶' : '⏸'}
           </button>
-          <button onClick={rollDice} style={BTN} title="Random scene">
-            {dieFace}
-          </button>
+          <DiceButton3D onClick={rollDice} />
         </div>
 
         {showHUD && <HUD engine={engine} director={director} />}
