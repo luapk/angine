@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
@@ -21,6 +21,21 @@ function DisableACES() {
 
 const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
 const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
+
+const DIE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
+
+const BTN = {
+  background: 'rgba(0,0,0,0.5)',
+  border: '1px solid rgba(255,255,255,0.35)',
+  color: '#fff',
+  fontFamily: 'monospace',
+  fontSize: 16,
+  cursor: 'pointer',
+  padding: '5px 10px',
+  borderRadius: 3,
+  lineHeight: 1,
+  userSelect: 'none',
+}
 
 export default function Visualizer({ engine, director, showHUD }) {
   const [state, setState] = useState(director.state)
@@ -47,7 +62,7 @@ export default function Visualizer({ engine, director, showHUD }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [isDotParade, state.spinSeed])
 
-  // Hands flash: eligible every 4th scene cut, then 25% chance, 200-360ms
+  // Hands flash: eligible every 4th scene cut, 25% chance, 400-700ms duration
   const [flashHands, setFlashHands] = useState(false)
   const flashTimerRef = useRef(null)
   const flashCutCountRef = useRef(0)
@@ -57,9 +72,23 @@ export default function Visualizer({ engine, director, showHUD }) {
     if (Math.random() > 0.25) return
     clearTimeout(flashTimerRef.current)
     setFlashHands(true)
-    flashTimerRef.current = setTimeout(() => setFlashHands(false), 200 + Math.random() * 160)
+    flashTimerRef.current = setTimeout(() => setFlashHands(false), 400 + Math.random() * 300)
     return () => clearTimeout(flashTimerRef.current)
   }, [state.spinSeed])
+
+  // Pause / play
+  const [paused, setPaused] = useState(false)
+  const togglePlay = useCallback(() => {
+    if (paused) { engine.resume(); setPaused(false) }
+    else        { engine.pause();  setPaused(true)  }
+  }, [engine, paused])
+
+  // Dice — force a scene cut
+  const [dieFace, setDieFace] = useState('⚄')
+  const rollDice = useCallback(() => {
+    setDieFace(DIE_FACES[Math.floor(Math.random() * 6)])
+    director.forceCut()
+  }, [director])
 
   return (
     <div className="stage">
@@ -115,6 +144,8 @@ export default function Visualizer({ engine, director, showHUD }) {
         {isWord && <WordFlash key={state.spinSeed} words={state.currentWords} palette={palette} />}
 
         <div className="grain" />
+
+        {/* Dev scene tag */}
         <div style={{
           position: 'absolute', top: 8, right: 8, zIndex: 200,
           background: 'rgba(0,0,0,0.55)', color: '#fff',
@@ -123,6 +154,19 @@ export default function Visualizer({ engine, director, showHUD }) {
           opacity: 0.75,
         }}>
           {state.scene} · {state.palette}
+        </div>
+
+        {/* Transport controls */}
+        <div style={{
+          position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 200, display: 'flex', gap: 8,
+        }}>
+          <button onClick={togglePlay} style={BTN} title="Pause / Play">
+            {paused ? '▶' : '⏸'}
+          </button>
+          <button onClick={rollDice} style={BTN} title="Random scene">
+            {dieFace}
+          </button>
         </div>
 
         {showHUD && <HUD engine={engine} director={director} />}

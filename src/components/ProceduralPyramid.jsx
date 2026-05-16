@@ -70,10 +70,9 @@ export default function ProceduralPyramid({
     const treble = v.treble || 0
 
     const speed = spinSpeed * (1 + v.mid * 1.6) * spinDirection
-    group.current.rotation.x += speed * dt
+    group.current.rotation[spinAxis] += speed * dt
 
-    // treble wobble on Y and Z only (not X since we spin on X)
-    group.current.rotation.y += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
+    group.current.rotation.x += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
     group.current.rotation.z += (Math.random() - 0.5) * treble * trebleWobble * dt * 60
 
     const s = baseScale * (1 + reactive * punchAmount)

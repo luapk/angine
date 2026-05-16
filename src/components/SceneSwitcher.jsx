@@ -30,9 +30,9 @@ function HandsGLB() {
     const box = new THREE.Box3().setFromObject(cloned)
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
-    cloned.scale.setScalar(5.5 / maxDim)
+    cloned.scale.setScalar(9.0 / maxDim)
     const center = box.getCenter(new THREE.Vector3())
-    cloned.position.sub(center.multiplyScalar(5.5 / maxDim))
+    cloned.position.sub(center.multiplyScalar(9.0 / maxDim))
     cloned.traverse(obj => {
       if (obj.isMesh) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
@@ -68,16 +68,14 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
   const quirks = useMemo(() => {
     const r = mulberry32(Math.floor(spinSeed))
     return {
-      spinAxis: r() < 0.75 ? 'y' : 'x',
-      counterAxis: r() < 0.6 ? 'y' : 'x',
+      spinAxis: 'y',              // always Y — no vertical tipping for 3D objects
+      counterAxis: 'y',
       direction: r() < 0.5 ? 1 : -1,
       tiltA: [ (r()-0.5)*0.4, 0, (r()-0.5)*0.3 ],
       tiltB: [ (r()-0.5)*0.4, 0, (r()-0.5)*0.3 ],
-      // For one-up scenes, use Y or X only — Z spin would breach the ±45° Z limit
-      heroAxis: r() < 0.65 ? 'y' : 'x',
+      heroAxis: 'y',              // always Y — no vertical tipping
       heroDir: r() < 0.5 ? 1 : -1,
       heroSpeed: 0.4 + r() * 1.2,
-      // For two/three-up, scale variance
       sizeMul: 0.85 + r() * 0.4,
     }
   }, [spinSeed])

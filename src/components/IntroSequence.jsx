@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import PolkaBackground from './PolkaBackground.jsx'
@@ -17,91 +17,70 @@ function DisableACES() {
 }
 
 export default function IntroSequence({ engine, onComplete }) {
-  const [subPhase, setSubPhase] = useState(0)
-  const [moving, setMoving] = useState(false)
   const doneRef = useRef(false)
 
   useEffect(() => {
-    // BPM-based timeouts — guaranteed to fire regardless of beat detection state
-    const bpm  = engine.bpm || 120
-    const beat = 60000 / bpm   // ms per beat
-
-    const timers = [
-      setTimeout(() => setSubPhase(1), beat * 1),      // panels split
-      setTimeout(() => setSubPhase(2), beat * 2),      // polka dots
-      setTimeout(() => setSubPhase(3), beat * 4),      // models appear (bar 2)
-      setTimeout(() => { setSubPhase(4); setMoving(true) }, beat * 6),  // start moving
-      setTimeout(() => {
-        if (!doneRef.current) { doneRef.current = true; onComplete() }
-      }, beat * 8),                                    // hand off (bar 3)
-    ]
-    return () => timers.forEach(clearTimeout)
+    const bpm = engine.bpm || 120
+    const twoBars = (8 * 60000) / bpm   // 8 beats = 2 bars in ms
+    const t = setTimeout(() => {
+      if (!doneRef.current) { doneRef.current = true; onComplete() }
+    }, twoBars)
+    return () => clearTimeout(t)
   }, [engine, onComplete])
-
-  const showPanels = subPhase >= 1
-  const showDots   = subPhase >= 2
-  const showModels = subPhase >= 3
-  const spinSpeed  = moving ? 0.8 : 0
-  const punch      = moving ? 0.42 : 0
 
   return (
     <div className="stage">
       <div className="stage-inner" style={{ background: '#000', position: 'relative' }}>
-        {showPanels && (
-          <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', background: '#fff', zIndex: 1 }} />
-        )}
+        {/* White left panel */}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', background: '#fff', zIndex: 1 }} />
 
-        {showDots && (
-          <>
-            <PolkaBackground engine={engine} palette={PALETTE_LEFT}  half="left" />
-            <PolkaBackground engine={engine} palette={PALETTE_RIGHT} half="right" />
-          </>
-        )}
+        {/* Inverted polka dots on each half */}
+        <PolkaBackground engine={engine} palette={PALETTE_LEFT}  half="left" />
+        <PolkaBackground engine={engine} palette={PALETTE_RIGHT} half="right" />
 
-        {showModels && (
-          <Canvas
-            dpr={[1, 2]}
-            gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-            camera={{ position: [0, 0, 8], fov: 45, near: 0.1, far: 200 }}
-            style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent', pointerEvents: 'none' }}
-          >
-            <EngineTick engine={engine} />
-            <DisableACES />
-            <ambientLight intensity={0.7} />
-            <directionalLight position={[5, 8, 6]} intensity={1.2} />
+        {/* Static guitar + drums over the panels */}
+        <Canvas
+          dpr={[1, 2]}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          camera={{ position: [0, 0, 8], fov: 45, near: 0.1, far: 200 }}
+          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent', pointerEvents: 'none' }}
+        >
+          <EngineTick engine={engine} />
+          <DisableACES />
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[5, 8, 6]} intensity={1.2} />
 
-            <ReactiveObject
-              url="/models/guitar.glb"
-              engine={engine}
-              palette={PALETTE_LEFT}
-              position={[-2.0, 0, 0]}
-              baseScale={1.55}
-              spinAxis="x"
-              spinDirection={1}
-              spinSpeed={spinSpeed}
-              reactiveBand="bassPunch"
-              punchAmount={punch}
-              fallbackGeometry="sphere"
-            />
-            <ReactiveObject
-              url="/models/drums.glb"
-              engine={engine}
-              palette={PALETTE_RIGHT}
-              position={[2.0, 0, 0]}
-              baseScale={1.55}
-              spinAxis="x"
-              spinDirection={-1}
-              spinSpeed={spinSpeed}
-              reactiveBand="bassPunch"
-              punchAmount={punch}
-              fallbackGeometry="box"
-            />
+          <ReactiveObject
+            url="/models/guitar.glb"
+            engine={engine}
+            palette={PALETTE_LEFT}
+            position={[-2.0, 0, 0]}
+            baseScale={1.55}
+            spinAxis="y"
+            spinDirection={1}
+            spinSpeed={0}
+            reactiveBand="bassPunch"
+            punchAmount={0}
+            fallbackGeometry="sphere"
+          />
+          <ReactiveObject
+            url="/models/drums.glb"
+            engine={engine}
+            palette={PALETTE_RIGHT}
+            position={[2.0, 0, 0]}
+            baseScale={1.55}
+            spinAxis="y"
+            spinDirection={-1}
+            spinSpeed={0}
+            reactiveBand="bassPunch"
+            punchAmount={0}
+            fallbackGeometry="box"
+          />
 
-            <EffectComposer multisampling={0}>
-              <Bloom intensity={0.45} luminanceThreshold={0.25} luminanceSmoothing={0.18} mipmapBlur />
-            </EffectComposer>
-          </Canvas>
-        )}
+          <EffectComposer multisampling={0}>
+            <Bloom intensity={0.45} luminanceThreshold={0.25} luminanceSmoothing={0.18} mipmapBlur />
+          </EffectComposer>
+        </Canvas>
 
         <div className="grain" />
         <div className="watermark">ANGINE DE POITRINE · {engine.bpm?.toFixed(0) ?? '—'} BPM</div>
