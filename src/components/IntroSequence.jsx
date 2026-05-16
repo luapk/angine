@@ -54,8 +54,8 @@ export default function IntroSequence({ engine, onComplete }) {
             url="/models/guitar.glb"
             engine={engine}
             palette={PALETTE_LEFT}
-            position={[-2.0, 0, 0]}
-            baseScale={1.55}
+            position={[-2.8, 0, 0]}
+            baseScale={4.5}
             spinAxis="y"
             spinDirection={1}
             spinSpeed={0}
@@ -67,8 +67,8 @@ export default function IntroSequence({ engine, onComplete }) {
             url="/models/drums.glb"
             engine={engine}
             palette={PALETTE_RIGHT}
-            position={[2.0, 0, 0]}
-            baseScale={1.55}
+            position={[2.8, 0, 0]}
+            baseScale={4.5}
             spinAxis="y"
             spinDirection={-1}
             spinSpeed={0}

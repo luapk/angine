@@ -1,6 +1,6 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useAnimations } from '@react-three/drei'
 import { Suspense } from 'react'
 import * as THREE from 'three'
 import ReactiveObject from './ReactiveObject.jsx'
@@ -55,10 +55,10 @@ function HandsGLB() {
     if (!group.current) return
     elapsedRef.current += dt
     const t = elapsedRef.current
-    // Crash in at 2.5×, spring-bounce back to 1× with oscillation
     const bounce = 1 + 1.5 * Math.exp(-t * 9) * (1 + 0.4 * Math.sin(t * 22))
     group.current.scale.setScalar(bounce)
-    group.current.rotation.y += dt * 2.2
+    // Gentle sway, capped at ±10° (0.175 rad)
+    group.current.rotation.y = 0.175 * Math.sin(t * 1.8)
   })
   if (!scene) return null
   return <group ref={group}><primitive object={scene} /></group>
@@ -106,6 +106,49 @@ function HandsZoomGLB() {
 
   if (!scene) return null
   return <group ref={group}><primitive object={scene} /></group>
+}
+
+// Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
+// Use gltf.scene directly (each dancer URL is unique, never shared) and
+// play animations via useAnimations so the character holds its pose.
+function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
+  const groupRef = useRef()
+  const gltf = useGLTF(url)
+  const { actions } = useAnimations(gltf.animations, groupRef)
+
+  useEffect(() => {
+    const first = Object.values(actions)[0]
+    if (first) { first.reset().play() }
+    return () => { Object.values(actions).forEach(a => a?.stop()) }
+  }, [actions])
+
+  const normalScale = useMemo(() => {
+    if (!gltf?.scene) return 1
+    const box = new THREE.Box3().setFromObject(gltf.scene)
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    // Zero out metalness on load
+    gltf.scene.traverse(obj => {
+      if (obj.isMesh) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
+      }
+    })
+    return (4.0 * sizeMul) / maxDim
+  }, [gltf, sizeMul])
+
+  useFrame((_, dt) => {
+    if (!groupRef.current) return
+    const v = engine.values
+    groupRef.current.rotation.y += spinDirection * spinSpeed * (1 + v.mid * 0.6) * dt
+  })
+
+  if (!gltf?.scene) return null
+  return (
+    <group ref={groupRef} position={[0, -1.0, 0]} rotation={[0.3, 0, 0]}>
+      <primitive object={gltf.scene} scale={normalScale} />
+    </group>
+  )
 }
 
 /**
@@ -248,8 +291,6 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     }
 
     case SCENES.SPLIT: {
-      // Each model centered at ±gap; baseScale×(1+punch) must stay ≤ gap
-      // to avoid crossing the centre line. gap=3.2, scale=2.8, punch=0.12 → max 3.14
       const gap = 3.2
       const leftUrl  = splitFlip ? URLS.drums  : URLS.guitar
       const rightUrl = splitFlip ? URLS.guitar : URLS.drums
@@ -264,12 +305,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             palette={leftPal}
             position={[-gap, 0, 0]}
-            baseScale={2.8}
+            baseScale={4.5}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
             spinSpeed={0.6}
             reactiveBand="bassPunch"
-            punchAmount={0.12}
+            punchAmount={0.10}
             tilt={quirks.tiltA}
             fallbackGeometry={leftFallback}
           />
@@ -278,12 +319,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             palette={rightPal}
             position={[gap, 0, 0]}
-            baseScale={2.8}
+            baseScale={4.5}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
             spinSpeed={0.6}
             reactiveBand="bassPunch"
-            punchAmount={0.12}
+            punchAmount={0.10}
             tilt={quirks.tiltB}
             fallbackGeometry={rightFallback}
           />
@@ -330,24 +371,16 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
 
     case SCENES.GUITAR_DANCER: {
       const dancerIdx = Math.floor(spinSeed) % DANCER_URLS.length
-      const dancerDir = quirks.heroDir
       return (
-        <ReactiveObject
-          key={`dancer-${spinSeed}`}
-          url={DANCER_URLS[dancerIdx]}
-          engine={engine}
-          palette={palette}
-          position={[0, -1.0, 0]}
-          baseScale={4.0 * quirks.sizeMul}
-          spinAxis="y"
-          spinDirection={dancerDir}
-          spinSpeed={quirks.heroSpeed * 0.6}
-          reactiveBand="overall"
-          punchAmount={0.18}
-          trebleWobble={0.02}
-          tilt={[0.3, 0, 0]}
-          fallbackGeometry="sphere"
-        />
+        <Suspense key={`dancer-${spinSeed}`} fallback={null}>
+          <DancerGLB
+            url={DANCER_URLS[dancerIdx]}
+            engine={engine}
+            spinDirection={quirks.heroDir}
+            spinSpeed={quirks.heroSpeed * 0.5}
+            sizeMul={quirks.sizeMul}
+          />
+        </Suspense>
       )
     }
 
