@@ -6,6 +6,7 @@ import { BlendFunction } from 'postprocessing'
 import PolkaBackground from './PolkaBackground.jsx'
 import PolkaZoom from './PolkaZoom.jsx'
 import DotReveal from './DotReveal.jsx'
+import DotGridReveal from './DotGridReveal.jsx'
 import SceneSwitcher from './SceneSwitcher.jsx'
 import WordFlash from './WordFlash.jsx'
 import EngineTick from './EngineTick.jsx'
@@ -94,6 +95,7 @@ export default function Visualizer({ engine, director, showHUD }) {
   const isTriPolar  = state.scene === SCENES.TRIANGLE_POLAR
   const isPolkaZoom  = state.scene === SCENES.POLKA_ZOOM
   const isDotParade  = state.scene === SCENES.DOT_PARADE
+  const isDotGrid    = state.scene === SCENES.DOT_GRID
   const isHandsZoom  = state.scene === SCENES.HANDS_ZOOM
   const isTri2D      = false
   const splitFlip    = state.splitFlip
@@ -136,12 +138,14 @@ export default function Visualizer({ engine, director, showHUD }) {
   return (
     <div className="stage">
       <div className="stage-inner" style={{
-        background: (flashHands || isHandsZoom) ? '#000' : (isSplit || isQuiet || isTri2D || isDotParade) ? (isDotParade && dotPhase === 2 ? '#fff' : '#000') : palette.bg
+        background: (flashHands || isHandsZoom || isDotGrid) ? '#000' : (isSplit || isQuiet || isTri2D || isDotParade) ? (isDotParade && dotPhase === 2 ? '#fff' : '#000') : palette.bg
       }}>
-        {isPolkaZoom ? (
+        {isDotGrid ? (
+          <DotGridReveal key={state.spinSeed} engine={engine} />
+        ) : isPolkaZoom ? (
           <PolkaZoom engine={engine} palette={palette} />
         ) : isDotParade ? (
-          <DotReveal show={dotPhase === 0} engine={engine} />
+          <DotReveal show={dotPhase === 0} />
         ) : isSplit ? (
           <>
             <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half={portrait ? 'top'    : 'left'} />

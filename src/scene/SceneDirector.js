@@ -19,6 +19,7 @@ export const SCENES = Object.freeze({
   DOT_PARADE: 'DOT_PARADE',
   GUITAR_DANCER: 'GUITAR_DANCER',
   HANDS_ZOOM: 'HANDS_ZOOM',
+  DOT_GRID: 'DOT_GRID',
 })
 
 export const WORDS = ['DADA', 'PYTHAGO', 'MANTRA', 'ROKNROLL', 'FANK LōB', "KLEK'N'KHN"]
@@ -288,6 +289,7 @@ export class SceneDirector {
       { value: SCENES.POLKA_ZOOM,      weight: polkaZoomW },
       { value: SCENES.DOT_PARADE,      weight: 1.6 },
       { value: SCENES.GUITAR_DANCER,   weight: 3.5 },
+      { value: SCENES.DOT_GRID,        weight: 1.8 },
     ].filter(c => c.value !== cur)
 
     // Soft penalty for very recent scenes

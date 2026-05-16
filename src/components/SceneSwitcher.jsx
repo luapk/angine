@@ -127,7 +127,7 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
     const targetH = portrait ? 9.0 : 5.5
-    cloned.scale.setScalar(targetH / maxDim)
+    cloned.scale.multiplyScalar(targetH / maxDim)
 
     // Clone materials so we don't corrupt the useGLTF cache, then push contrast.
     const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
@@ -253,7 +253,8 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
       )
 
     case SCENES.WORD_FLASH:
-      return null   // text rendered as DOM overlay in Visualizer
+    case SCENES.DOT_GRID:
+      return null   // DOM layers rendered in Visualizer
 
     case SCENES.TUNNEL:
       return <TriangleTunnel key={`tun-${spinSeed}`} engine={engine} palette={palette} />
