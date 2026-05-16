@@ -133,10 +133,11 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
         mats.forEach(mat => {
           mat.metalness = 0
-          mat.roughness = 0.85
-          // Force near-black so character reads as bold silhouette on white bg
-          if (mat.color) mat.color.set('#0d0d0d')
+          mat.roughness = 0.8
+          // Darken original colours ~55% — enough contrast on white without silhouette
+          if (mat.color) mat.color.multiplyScalar(0.45)
           if (mat.emissive) mat.emissive.set('#000000')
+          mat.emissiveIntensity = 0
         })
       }
     })
@@ -165,8 +166,13 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
  * Picks the scene tree based on director state.
  * Keyed on scene + spinSeed so each cut remounts → hard cut feel.
  */
-export default function SceneSwitcher({ state, engine, palette, dotPhase, flashHands }) {
+export default function SceneSwitcher({ state, engine, palette, dotPhase, flashHands, portrait }) {
   const { scene, spinSeed, splitFlip } = state
+
+  // Gap values shrink on portrait (narrow viewport) so objects stay on-screen
+  const GAP_TWO   = portrait ? 1.4 : 2.0
+  const GAP_THREE = portrait ? 1.8 : 2.6
+  const GAP_SPLIT = portrait ? 2.0 : 3.2
 
   // Generative quirks per scene instance — derived from spinSeed so they stay
   // stable for the duration of the scene but vary between cuts
@@ -209,12 +215,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
           engine={engine}
           palette={palette}
           position={[0, 0, 0]}
-          baseScale={3.4 * quirks.sizeMul}
+          baseScale={5.5 * quirks.sizeMul}
           spinAxis={quirks.heroAxis}
           spinDirection={quirks.heroDir}
           spinSpeed={quirks.heroSpeed}
           reactiveBand="bassPunch"
-          punchAmount={0.30}
+          punchAmount={0.22}
           fallbackGeometry="sphere"
         />
       )
@@ -227,12 +233,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
           engine={engine}
           palette={palette}
           position={[0, 0, 0]}
-          baseScale={3.4 * quirks.sizeMul}
+          baseScale={5.5 * quirks.sizeMul}
           spinAxis={quirks.heroAxis}
           spinDirection={-quirks.heroDir}
           spinSpeed={quirks.heroSpeed * 1.1}
           reactiveBand="bassPunch"
-          punchAmount={0.30}
+          punchAmount={0.22}
           fallbackGeometry="box"
         />
       )
@@ -244,18 +250,18 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
           engine={engine}
           palette={palette}
           position={[0, 0, 0]}
-          baseScale={3.6 * quirks.sizeMul}
+          baseScale={5.5 * quirks.sizeMul}
           spinAxis={quirks.heroAxis}
           spinDirection={quirks.heroDir}
           spinSpeed={quirks.heroSpeed * 1.4}
           reactiveBand="overall"
-          punchAmount={0.25}
+          punchAmount={0.22}
         />
       )
 
     case SCENES.THREE_UP: {
-      const gap = 2.6
-      const sideScale = 1.2 * quirks.sizeMul
+      const gap = GAP_THREE
+      const sideScale = 2.0 * quirks.sizeMul
       return (
         <group key={`3-${spinSeed}`}>
           <ReactiveObject
@@ -301,7 +307,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     }
 
     case SCENES.SPLIT: {
-      const gap = 3.2
+      const gap = GAP_SPLIT
       const leftUrl  = splitFlip ? URLS.drums  : URLS.guitar
       const rightUrl = splitFlip ? URLS.guitar : URLS.drums
       const leftPal  = splitFlip ? SPLIT_RIGHT : SPLIT_LEFT
@@ -352,7 +358,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             palette={palette}
             position={[0, 0, 0]}
-            baseScale={2.4 * quirks.sizeMul}
+            baseScale={4.0 * quirks.sizeMul}
             spinAxis={quirks.heroAxis}
             spinDirection={quirks.heroDir}
             spinSpeed={quirks.heroSpeed * 1.1}
@@ -384,13 +390,17 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
       const dancerFallback = (
         <ProceduralPyramid
           engine={engine} palette={palette}
-          position={[0, 0, 0]} baseScale={3.2}
+          position={[0, 0, 0]} baseScale={5.5}
           spinAxis="y" spinDirection={quirks.heroDir} spinSpeed={1.0}
           reactiveBand="overall" punchAmount={0.2}
         />
       )
       return (
-        <Suspense key={`dancer-${spinSeed}`} fallback={dancerFallback}>
+        <group key={`dancer-${spinSeed}`}>
+          {/* Extra scene lights: palette accent is black on BLACK_ON_WHITE so we add white fill */}
+          <directionalLight position={[3, 7, 5]} intensity={2.2} />
+          <directionalLight position={[-4, 2, 4]} intensity={0.9} />
+        <Suspense fallback={dancerFallback}>
           <DancerGLB
             url={DANCER_URLS[dancerIdx]}
             engine={engine}
@@ -399,6 +409,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             sizeMul={quirks.sizeMul}
           />
         </Suspense>
+        </group>
       )
     }
 
@@ -423,7 +434,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
 
     case SCENES.TWO_UP:
     default: {
-      const gap = 2.0
+      const gap = GAP_TWO
       return (
         <group key={`2-${spinSeed}`}>
           <ReactiveObject
@@ -431,12 +442,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             palette={palette}
             position={[-gap, 0, 0]}
-            baseScale={1.55 * quirks.sizeMul}
+            baseScale={2.8 * quirks.sizeMul}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
             spinSpeed={0.8}
             reactiveBand="bassPunch"
-            punchAmount={0.42}
+            punchAmount={0.28}
             tilt={quirks.tiltA}
             fallbackGeometry="sphere"
           />
@@ -445,12 +456,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             palette={palette}
             position={[gap, 0, 0]}
-            baseScale={1.55 * quirks.sizeMul}
+            baseScale={2.8 * quirks.sizeMul}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
             spinSpeed={0.8}
             reactiveBand="bassPunch"
-            punchAmount={0.42}
+            punchAmount={0.28}
             tilt={quirks.tiltB}
             fallbackGeometry="box"
           />

@@ -303,3 +303,63 @@ html, body, #root {
   pointer-events: none;
   opacity: 0.7;
 }
+
+/* ---------- Mobile / portrait ---------- */
+@media (orientation: portrait), (max-width: 600px) {
+  /* Fill the full screen — drop the 16:9 letterbox */
+  .stage-inner {
+    aspect-ratio: unset;
+    width: 100vw;
+    height: 100svh;
+  }
+
+  /* Larger tap targets for transport buttons */
+  .watermark {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  /* Dice screen: compact for small screens */
+  .dice-screen {
+    padding: 20px 16px;
+    gap: 0;
+  }
+
+  .dice-canvas-wrap {
+    width: 180px;
+    height: 110px;
+  }
+
+  .brand-garamond {
+    font-size: clamp(28px, 10vw, 55px);
+  }
+
+  .brand-garamond-sub {
+    font-size: clamp(8px, 2vw, 10px);
+  }
+
+  .dice-label {
+    font-size: 11px;
+    margin-top: 12px;
+  }
+
+  .dice-btn {
+    padding: 16px 28px;
+    font-size: 12px;
+    margin-top: 14px;
+    /* Ensure comfortable touch target */
+    min-height: 48px;
+  }
+
+  /* Upload screen: single column, full width */
+  .upload-inner {
+    max-width: 100%;
+    padding: 20px 16px;
+  }
+
+  .dropzone {
+    padding: 20px 16px;
+  }
+}

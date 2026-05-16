@@ -20,6 +20,15 @@ function DisableACES() {
   return null
 }
 
+function CameraAdapt({ fov }) {
+  const { camera } = useThree()
+  useEffect(() => {
+    camera.fov = fov
+    camera.updateProjectionMatrix()
+  }, [camera, fov])
+  return null
+}
+
 const SPLIT_LEFT  = resolvePalette(PALETTES.WHITE_ON_BLACK)
 const SPLIT_RIGHT = resolvePalette(PALETTES.BLACK_ON_WHITE)
 
@@ -39,6 +48,14 @@ const BTN = {
 export default function Visualizer({ engine, director, showHUD }) {
   const [state, setState] = useState(director.state)
   useEffect(() => director.onChange((s) => setState({ ...s })), [director])
+
+  const [portrait, setPortrait] = useState(() => window.innerHeight > window.innerWidth)
+  useEffect(() => {
+    const h = () => setPortrait(window.innerHeight > window.innerWidth)
+    window.addEventListener('resize', h)
+    return () => window.removeEventListener('resize', h)
+  }, [])
+  const cameraFov = portrait ? 70 : 45
 
   const palette   = useMemo(() => resolvePalette(state.palette), [state.palette])
   const isTunnel    = state.scene === SCENES.TUNNEL
@@ -119,12 +136,13 @@ export default function Visualizer({ engine, director, showHUD }) {
         >
           <EngineTick engine={engine} />
           <DisableACES />
+          <CameraAdapt fov={cameraFov} />
 
           <ambientLight intensity={0.7} />
           <directionalLight position={[5, 8, 6]} intensity={1.2} />
           <directionalLight position={[-5, -3, -4]} intensity={0.4} color={palette.accent} />
 
-          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} flashHands={flashHands} />
+          <SceneSwitcher state={state} engine={engine} palette={palette} dotPhase={dotPhase} flashHands={flashHands} portrait={portrait} />
 
           <EffectComposer multisampling={0}>
             <Bloom
