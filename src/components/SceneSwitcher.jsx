@@ -107,11 +107,15 @@ function HandsZoomGLB() {
 }
 
 // Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
-// Transforms (scale + centering) are applied directly to the cloned Three.js
-// object so centering is reliable regardless of model origin placement.
+// The static bind-pose bounding box does NOT match where the posed/skinned
+// mesh actually renders, so we measure the live posed bounds a few frames in
+// (via SkinnedMesh.computeBoundingBox) and stand the character on the bottom
+// edge of the viewport.
 function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
   const groupRef = useRef()
   const gltf = useGLTF(url)
+  const placedRef = useRef(false)
+  const frameRef = useRef(0)
 
   const object = useMemo(() => {
     if (!gltf?.scene) return null
@@ -123,13 +127,7 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
     const targetH = portrait ? 9.0 : 5.5
-    const s = targetH / maxDim
-    cloned.scale.setScalar(s)
-
-    // Re-compute box in scaled space and shift root so centre is at origin.
-    const scaledBox = new THREE.Box3().setFromObject(cloned)
-    const center = scaledBox.getCenter(new THREE.Vector3())
-    cloned.position.sub(center)
+    cloned.scale.setScalar(targetH / maxDim)
 
     // Clone materials so we don't corrupt the useGLTF cache, then push contrast.
     const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
@@ -163,9 +161,42 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
   }, [actions])
 
   useFrame((_, dt) => {
-    if (!groupRef.current) return
+    const g = groupRef.current
+    if (!g) return
+
+    // Wait a few frames so the animation mixer has posed the skeleton, then
+    // measure the real skinned bounds and drop the feet onto the bottom frame.
+    if (!placedRef.current) {
+      frameRef.current++
+      if (frameRef.current >= 5) {
+        g.updateWorldMatrix(true, true)
+        const wb = new THREE.Box3()
+        let found = false
+        g.traverse(o => {
+          if (o.isSkinnedMesh && typeof o.computeBoundingBox === 'function') {
+            o.computeBoundingBox()
+            if (o.boundingBox) {
+              wb.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld))
+              found = true
+            }
+          } else if (o.isMesh && o.geometry) {
+            if (!o.geometry.boundingBox) o.geometry.computeBoundingBox()
+            wb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld))
+            found = true
+          }
+        })
+        if (found && isFinite(wb.min.y) && wb.max.y > wb.min.y) {
+          const c = wb.getCenter(new THREE.Vector3())
+          const floorY = portrait ? -5.6 : -3.2
+          g.position.x -= c.x
+          g.position.y += floorY - wb.min.y
+          placedRef.current = true
+        }
+      }
+    }
+
     const v = engine.values
-    groupRef.current.rotation.y += spinDirection * spinSpeed * (1 + v.mid * 0.6) * dt
+    g.rotation.y += spinDirection * spinSpeed * (1 + v.mid * 0.6) * dt
   })
 
   if (!object) return null

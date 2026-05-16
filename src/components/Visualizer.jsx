@@ -141,7 +141,7 @@ export default function Visualizer({ engine, director, showHUD }) {
         {isPolkaZoom ? (
           <PolkaZoom engine={engine} palette={palette} />
         ) : isDotParade ? (
-          <DotReveal show={dotPhase === 0} />
+          <DotReveal show={dotPhase === 0} engine={engine} />
         ) : isSplit ? (
           <>
             <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half={portrait ? 'top'    : 'left'} />
