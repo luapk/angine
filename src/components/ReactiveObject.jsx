@@ -142,3 +142,4 @@ useGLTF.setDecoderPath('/draco/')
 // Preload to avoid pop-in
 useGLTF.preload('/models/guitar.glb')
 useGLTF.preload('/models/drums.glb')
+useGLTF.preload('/models/hands.glb')

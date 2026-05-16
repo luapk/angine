@@ -1,4 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
+import { Suspense } from 'react'
+import * as THREE from 'three'
 import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
 import GoldPyramid from './GoldPyramid.jsx'
@@ -18,11 +22,46 @@ const URLS = {
   drums:  '/models/drums.glb',
 }
 
+function HandsGLB() {
+  const group = useRef()
+  const gltf = useGLTF('/models/hands.glb')
+  const scene = useMemo(() => {
+    if (!gltf?.scene) return null
+    const cloned = gltf.scene.clone(true)
+    const box = new THREE.Box3().setFromObject(cloned)
+    const size = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    cloned.scale.setScalar(3.2 / maxDim)
+    const center = box.getCenter(new THREE.Vector3())
+    cloned.position.sub(center.multiplyScalar(3.2 / maxDim))
+    cloned.traverse(obj => {
+      if (obj.isMesh) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        mats.forEach(mat => { if (mat.metalness !== undefined) mat.metalness = 0 })
+      }
+    })
+    return cloned
+  }, [gltf])
+  useFrame((_, dt) => {
+    if (group.current) group.current.rotation.y += dt * 2.2
+  })
+  if (!scene) return null
+  return <group ref={group}><primitive object={scene} /></group>
+}
+
+function HandsDisplay() {
+  return (
+    <Suspense fallback={null}>
+      <HandsGLB />
+    </Suspense>
+  )
+}
+
 /**
  * Picks the scene tree based on director state.
  * Keyed on scene + spinSeed so each cut remounts → hard cut feel.
  */
-export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
+export default function SceneSwitcher({ state, engine, palette, dotPhase, flashHands }) {
   const { scene, spinSeed, splitFlip } = state
 
   // Generative quirks per scene instance — derived from spinSeed so they stay
@@ -43,6 +82,8 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
       sizeMul: 0.85 + r() * 0.4,
     }
   }, [spinSeed])
+
+  if (flashHands) return <HandsDisplay key="hands-flash" />
 
   switch (scene) {
     case SCENES.WORD_FLASH:

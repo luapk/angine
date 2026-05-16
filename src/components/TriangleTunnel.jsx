@@ -2,16 +2,11 @@ import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-/**
- * Concentric triangle tunnel. ~44 triangle line-loops stacked along Z, all the
- * same world-space size; perspective creates the concentric look on screen.
- * Staggered Z rotation per ring creates a helix/twist feel.
- *
- * Speed and twist scale with bass/overall/mid energy.
- */
-const RING_COUNT = 44
-const RING_SPACING = 2.6
-const TRI_SIZE = 5.5
+// Burst fly-through tunnel: quadratic speed ramp gives slow-approach → WHOOSH feel.
+// Smaller TRI_SIZE (vs 5.5) lets perspective create genuine depth — far rings appear tiny.
+const RING_COUNT = 26
+const RING_SPACING = 3.2
+const TRI_SIZE = 2.0
 
 function makeTriangleGeometry(size) {
   const r = size
@@ -27,30 +22,29 @@ function makeTriangleGeometry(size) {
 
 export default function TriangleTunnel({ engine, palette }) {
   const group = useRef()
+  const elapsed = useRef(0)
 
-  // One geometry + one material shared across all rings
   const geometry = useMemo(() => makeTriangleGeometry(TRI_SIZE), [])
   const material = useMemo(() => new THREE.LineBasicMaterial({
     color: new THREE.Color(palette.keyline),
-    transparent: true,
-    opacity: 1,
   }), [])
 
-  // Build line objects ONCE
   const lines = useMemo(() => {
     const arr = []
     for (let i = 0; i < RING_COUNT; i++) {
       const line = new THREE.Line(geometry, material)
-      line.position.set(0, 0, -i * RING_SPACING + 3)
+      line.position.set(0, 0, -i * RING_SPACING)
       arr.push(line)
     }
     return arr
   }, [geometry, material])
 
-  // Palette updates → just recolor the shared material
   useEffect(() => { material.color.set(palette.keyline) }, [palette, material])
 
-  // Cleanup on unmount
+  useEffect(() => {
+    elapsed.current = 0
+  }, [])
+
   useEffect(() => () => {
     geometry.dispose()
     material.dispose()
@@ -58,17 +52,18 @@ export default function TriangleTunnel({ engine, palette }) {
 
   useFrame((_, dt) => {
     if (!group.current) return
+    elapsed.current += dt
+    const t = elapsed.current
     const v = engine.values
-    const baseSpeed = 20
-    const speed = baseSpeed * (1 + v.bassPunch * 1.5 + v.overall * 0.7)
 
-    const recycleDist = RING_COUNT * RING_SPACING
+    // Quadratic ramp: ~8 u/s at t=0 → ~130 u/s at t=1.7s
+    const speed = 8 + t * t * 46 + v.bassPunch * 7
+
+    const totalDepth = RING_COUNT * RING_SPACING
     for (const line of lines) {
       line.position.z += speed * dt
-      if (line.position.z > 5) line.position.z -= recycleDist
+      if (line.position.z > 10) line.position.z -= totalDepth
     }
-
-    group.current.rotation.z += dt * 0.06 * (1 + v.treble * 0.8)
   })
 
   return (
