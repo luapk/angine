@@ -111,7 +111,7 @@ function HandsZoomGLB() {
 // Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
 // Use gltf.scene directly (each dancer URL is unique, never shared) and
 // play animations via useAnimations so the character holds its pose.
-function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
+function DancerGLB({ url, engine, spinDirection, spinSpeed }) {
   const groupRef = useRef()
   const gltf = useGLTF(url)
   const { actions } = useAnimations(gltf.animations, groupRef)
@@ -128,6 +128,7 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
     const size = box.getSize(new THREE.Vector3())
     const center = box.getCenter(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
+    const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
     gltf.scene.traverse(obj => {
       if (obj.isMesh) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
@@ -136,12 +137,19 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, sizeMul }) {
           mat.roughness = 0.8
           if (mat.emissive) mat.emissive.set('#000000')
           mat.emissiveIntensity = 0
+          // Push darks darker / lights lighter so the black suit + white hat
+          // read crisp instead of a flat washed grey
+          if (mat.color) {
+            mat.color.setRGB(contrast(mat.color.r), contrast(mat.color.g), contrast(mat.color.b))
+          }
         })
       }
     })
-    const s = (6.0 * sizeMul) / maxDim   // 50% bigger than before
+    // Fixed scale (no per-cut sizeMul) → every dancer is the SAME size, and
+    // deliberately large: cropping in action poses is intended
+    const s = 8.5 / maxDim
     return { normalScale: s, centerOffset: center.multiplyScalar(-s) }
-  }, [gltf, sizeMul])
+  }, [gltf])
 
   useFrame((_, dt) => {
     if (!groupRef.current) return
@@ -416,7 +424,6 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             engine={engine}
             spinDirection={quirks.heroDir}
             spinSpeed={quirks.heroSpeed * 0.5}
-            sizeMul={quirks.sizeMul}
           />
         </Suspense>
         </group>

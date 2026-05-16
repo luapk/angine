@@ -11,7 +11,7 @@ const DEFAULT_TRACK = '/audio/Sarniezz.mp3'
 export default function App() {
   const [phase, setPhase] = useState('loading')  // auto-loads Sarniezz immediately
   const [status, setStatus] = useState('LOADING…')
-  const [showHUD, setShowHUD] = useState(false)
+  const [showHUD, setShowHUD] = useState(true)
 
   const engineRef = useRef(null)
   const directorRef = useRef(null)
