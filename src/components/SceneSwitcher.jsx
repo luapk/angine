@@ -260,13 +260,16 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     case SCENES.THREE_UP: {
       const gap = GAP_THREE
       const sideScale = 2.0 * quirks.sizeMul
+      // Portrait: stack guitar / pyramid / drums top → bottom
+      const posA = portrait ? [0,  gap, 0] : [-gap, 0, 0]
+      const posC = portrait ? [0, -gap, 0] : [ gap, 0, 0]
       return (
         <group key={`3-${spinSeed}`}>
           <ReactiveObject
             url={URLS.guitar}
             engine={engine}
             palette={palette}
-            position={[-gap, 0, 0]}
+            position={posA}
             baseScale={sideScale}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
@@ -290,7 +293,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             url={URLS.drums}
             engine={engine}
             palette={palette}
-            position={[gap, 0, 0]}
+            position={posC}
             baseScale={sideScale}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
@@ -312,13 +315,16 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
       const rightPal = splitFlip ? SPLIT_LEFT  : SPLIT_RIGHT
       const leftFallback  = splitFlip ? 'box'    : 'sphere'
       const rightFallback = splitFlip ? 'sphere' : 'box'
+      // Portrait: objects sit in top / bottom panel; landscape: left / right
+      const posA = portrait ? [0,  gap * 0.5, 0] : [-gap, 0, 0]
+      const posB = portrait ? [0, -gap * 0.5, 0] : [ gap, 0, 0]
       return (
         <group key={`split-${spinSeed}`}>
           <ReactiveObject
             url={leftUrl}
             engine={engine}
             palette={leftPal}
-            position={[-gap, 0, 0]}
+            position={posA}
             baseScale={4.5}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
@@ -332,7 +338,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             url={rightUrl}
             engine={engine}
             palette={rightPal}
-            position={[gap, 0, 0]}
+            position={posB}
             baseScale={4.5}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
@@ -412,7 +418,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     }
 
     case SCENES.TRIANGLE_POLAR:
-      return <TriangleThreeUp key={`tt-${spinSeed}`} engine={engine} palette={palette} spinSeed={spinSeed} />
+      return <TriangleThreeUp key={`tt-${spinSeed}`} engine={engine} palette={palette} spinSeed={spinSeed} portrait={portrait} />
 
     case SCENES.QUIET_TRIANGLE:
       return <QuietTriangle key={`qt-${spinSeed}`} engine={engine} />
@@ -433,13 +439,15 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     case SCENES.TWO_UP:
     default: {
       const gap = GAP_TWO
+      const posA = portrait ? [0,  gap * 0.85, 0] : [-gap, 0, 0]
+      const posB = portrait ? [0, -gap * 0.85, 0] : [ gap, 0, 0]
       return (
         <group key={`2-${spinSeed}`}>
           <ReactiveObject
             url={URLS.guitar}
             engine={engine}
             palette={palette}
-            position={[-gap, 0, 0]}
+            position={posA}
             baseScale={2.8 * quirks.sizeMul}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
@@ -453,7 +461,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
             url={URLS.drums}
             engine={engine}
             palette={palette}
-            position={[gap, 0, 0]}
+            position={posB}
             baseScale={2.8 * quirks.sizeMul}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}

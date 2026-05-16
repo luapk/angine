@@ -115,8 +115,8 @@ export default function Visualizer({ engine, director, showHUD }) {
           <DotReveal show={dotPhase === 0} />
         ) : isSplit ? (
           <>
-            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half="left" />
-            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_LEFT  : SPLIT_RIGHT} half="right" />
+            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_RIGHT : SPLIT_LEFT}  half={portrait ? 'top'    : 'left'} />
+            <PolkaBackground engine={engine} palette={splitFlip ? SPLIT_LEFT  : SPLIT_RIGHT} half={portrait ? 'bottom' : 'right'} />
           </>
         ) : (!isTunnel && !isQuiet && !isTri2D && !isHandsZoom) && (
           <PolkaBackground engine={engine} palette={palette} />

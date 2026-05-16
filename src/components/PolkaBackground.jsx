@@ -42,10 +42,10 @@ export default function PolkaBackground({ engine, palette, half }) {
       ref={ref}
       style={{
         position: 'absolute',
-        top: 0,
-        bottom: 0,
-        left:  half === 'right' ? '50%' : 0,
-        right: half === 'left'  ? '50%' : 0,
+        top:    half === 'bottom' ? '50%' : 0,
+        bottom: half === 'top'    ? '50%' : 0,
+        left:   half === 'right'  ? '50%' : 0,
+        right:  half === 'left'   ? '50%' : 0,
         zIndex: 1,
         '--bg': palette.bg,
         '--polka': palette.polka,
