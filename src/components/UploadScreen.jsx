@@ -52,6 +52,17 @@ export default function UploadScreen({ onLoad, status }) {
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
 
+        {defaultFile && (
+          <div
+            className="dropzone"
+            style={{ marginTop: 12, borderStyle: 'solid', borderColor: 'var(--gold)', color: 'var(--gold)' }}
+            onClick={() => onLoad(defaultFile)}
+          >
+            ▶ SARNIEZZ.MP3
+            <span className="small" style={{ color: 'var(--gold)' }}>PLAY DEFAULT TRACK</span>
+          </div>
+        )}
+
         <div className="status">{status || ' '}</div>
       </div>
     </div>

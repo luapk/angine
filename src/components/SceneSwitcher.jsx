@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
+import GoldPyramid from './GoldPyramid.jsx'
 import TriangleTunnel from './TriangleTunnel.jsx'
 import TrianglePolar from './TrianglePolar.jsx'
 import TriangleField from './TriangleField.jsx'
@@ -104,6 +105,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
 
     case SCENES.THREE_UP: {
       const gap = 2.6
+      const sideScale = 1.2 * quirks.sizeMul
       return (
         <group key={`3-${spinSeed}`}>
           <ReactiveObject
@@ -111,7 +113,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
             engine={engine}
             palette={palette}
             position={[-gap, 0, 0]}
-            baseScale={1.2 * quirks.sizeMul}
+            baseScale={sideScale}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
             spinSpeed={0.9}
@@ -120,12 +122,11 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
             tilt={quirks.tiltA}
             fallbackGeometry="sphere"
           />
-          <ProceduralPyramid
+          <GoldPyramid
+            key={`gp-${spinSeed}`}
             engine={engine}
-            palette={palette}
             position={[0, 0, 0]}
-            baseScale={1.35 * quirks.sizeMul}
-            spinAxis={'y'}
+            baseScale={sideScale * 1.4}
             spinDirection={1}
             spinSpeed={1.3}
             reactiveBand="overall"
@@ -136,7 +137,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
             engine={engine}
             palette={palette}
             position={[gap, 0, 0]}
-            baseScale={1.2 * quirks.sizeMul}
+            baseScale={sideScale}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
             spinSpeed={0.9}
@@ -150,7 +151,9 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
     }
 
     case SCENES.SPLIT: {
-      const gap = 3.5
+      // Each model centered at ±gap; baseScale×(1+punch) must stay ≤ gap
+      // to avoid crossing the centre line. gap=3.2, scale=2.8, punch=0.12 → max 3.14
+      const gap = 3.2
       const leftUrl  = splitFlip ? URLS.drums  : URLS.guitar
       const rightUrl = splitFlip ? URLS.guitar : URLS.drums
       const leftPal  = splitFlip ? SPLIT_RIGHT : SPLIT_LEFT
@@ -164,12 +167,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
             engine={engine}
             palette={leftPal}
             position={[-gap, 0, 0]}
-            baseScale={6.8}
+            baseScale={2.8}
             spinAxis={quirks.spinAxis}
             spinDirection={quirks.direction}
             spinSpeed={0.6}
             reactiveBand="bassPunch"
-            punchAmount={0.38}
+            punchAmount={0.12}
             tilt={quirks.tiltA}
             fallbackGeometry={leftFallback}
           />
@@ -178,12 +181,12 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase }) {
             engine={engine}
             palette={rightPal}
             position={[gap, 0, 0]}
-            baseScale={6.8}
+            baseScale={2.8}
             spinAxis={quirks.spinAxis}
             spinDirection={-quirks.direction}
             spinSpeed={0.6}
             reactiveBand="bassPunch"
-            punchAmount={0.38}
+            punchAmount={0.12}
             tilt={quirks.tiltB}
             fallbackGeometry={rightFallback}
           />
