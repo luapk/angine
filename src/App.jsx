@@ -4,6 +4,7 @@ import { SceneDirector } from './scene/SceneDirector.js'
 import UploadScreen from './components/UploadScreen.jsx'
 import Visualizer from './components/Visualizer.jsx'
 import DiceScreen from './components/DiceScreen.jsx'
+import IntroSequence from './components/IntroSequence.jsx'
 
 const DEFAULT_TRACK = '/audio/Sarniezz.mp3'
 
@@ -49,8 +50,12 @@ export default function App() {
 
   const handlePlay = () => {
     engineRef.current?.play()
-    setPhase('playing')
+    setPhase('intro')
   }
+
+  const handleIntroComplete = useCallback(() => {
+    setPhase('playing')
+  }, [])
 
   const handleUpload = () => setPhase('upload')
 
@@ -99,6 +104,10 @@ export default function App() {
         onUpload={handleUpload}
       />
     )
+  }
+
+  if (phase === 'intro' && engineRef.current && directorRef.current) {
+    return <IntroSequence engine={engineRef.current} onComplete={handleIntroComplete} />
   }
 
   if (phase === 'playing' && engineRef.current && directorRef.current) {

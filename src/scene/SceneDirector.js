@@ -14,7 +14,6 @@ export const SCENES = Object.freeze({
   SPLIT: 'SPLIT',
   WORD_FLASH: 'WORD_FLASH',
   TRIANGLE_POLAR: 'TRIANGLE_POLAR',
-  TRIANGLE_FIELD: 'TRIANGLE_FIELD',
   QUIET_TRIANGLE: 'QUIET_TRIANGLE',
   POLKA_ZOOM: 'POLKA_ZOOM',
   DOT_PARADE: 'DOT_PARADE',
@@ -220,6 +219,13 @@ export class SceneDirector {
       return
     }
 
+    // Tunnel always white-on-black
+    if (nextScene === SCENES.TUNNEL) {
+      this.state.palette = PALETTES.WHITE_ON_BLACK
+      this._emit()
+      return
+    }
+
     // ~40% of cuts also flip the palette; peak cuts almost always do
     const pPaletteFlip = ctx.recentPeak ? 0.85 : 0.35
     if (Math.random() < pPaletteFlip) {
@@ -242,7 +248,6 @@ export class SceneDirector {
     const splitW   = 3.2
     const wordW    = 2.5
     const triPolarW = 1.6
-    const triFieldW = 1.6
     const polkaZoomW = 2.0
 
     const candidates = [
@@ -255,7 +260,6 @@ export class SceneDirector {
       { value: SCENES.SPLIT,          weight: splitW },
       { value: SCENES.WORD_FLASH,     weight: wordW },
       { value: SCENES.TRIANGLE_POLAR, weight: triPolarW },
-      { value: SCENES.TRIANGLE_FIELD, weight: triFieldW },
       { value: SCENES.POLKA_ZOOM,     weight: polkaZoomW },
       { value: SCENES.DOT_PARADE,     weight: 1.6 },
     ].filter(c => c.value !== cur)
