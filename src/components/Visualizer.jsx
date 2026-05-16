@@ -32,10 +32,9 @@ export default function Visualizer({ engine, director, showHUD }) {
   const isWord      = state.scene === SCENES.WORD_FLASH
   const isQuiet     = state.scene === SCENES.QUIET_TRIANGLE
   const isTriPolar  = state.scene === SCENES.TRIANGLE_POLAR
-  const isTriField  = state.scene === SCENES.TRIANGLE_FIELD
   const isPolkaZoom  = state.scene === SCENES.POLKA_ZOOM
   const isDotParade  = state.scene === SCENES.DOT_PARADE
-  const isTri2D      = isTriPolar || isTriField
+  const isTri2D      = isTriPolar
   const splitFlip    = state.splitFlip
 
   // DOT_PARADE internal phase: 0=dots, 1=guitar grid, 2=drums grid (white bg)
@@ -48,14 +47,17 @@ export default function Visualizer({ engine, director, showHUD }) {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [isDotParade, state.spinSeed])
 
-  // Hands flash: ~35% chance per scene cut, black bg + hands for 100-180ms
+  // Hands flash: eligible every 4th scene cut, then 25% chance, 200-360ms
   const [flashHands, setFlashHands] = useState(false)
   const flashTimerRef = useRef(null)
+  const flashCutCountRef = useRef(0)
   useEffect(() => {
-    if (Math.random() > 0.35) return
+    flashCutCountRef.current++
+    if (flashCutCountRef.current % 4 !== 0) return
+    if (Math.random() > 0.25) return
     clearTimeout(flashTimerRef.current)
     setFlashHands(true)
-    flashTimerRef.current = setTimeout(() => setFlashHands(false), 100 + Math.random() * 80)
+    flashTimerRef.current = setTimeout(() => setFlashHands(false), 200 + Math.random() * 160)
     return () => clearTimeout(flashTimerRef.current)
   }, [state.spinSeed])
 

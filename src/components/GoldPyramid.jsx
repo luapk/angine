@@ -1,9 +1,18 @@
-import { useRef, useMemo, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
+import { Line } from '@react-three/drei'
 
 const GOLD = '#d4a017'
-const FLASH_PATTERN_MS = [60, 60, 60, 60, 60, 60]  // alternating off/on × 3
+const FLASH_PATTERN_MS = [60, 60, 60, 60, 60, 60]
+
+const APEX = [0, 0.425, 0]
+const BASE = [
+  [0.5, -0.425, 0],
+  [0, -0.425, 0.5],
+  [-0.5, -0.425, 0],
+  [0, -0.425, -0.5],
+]
+const BASE_LOOP = [...BASE, BASE[0]]
 
 export default function GoldPyramid({
   engine,
@@ -16,22 +25,6 @@ export default function GoldPyramid({
 }) {
   const group = useRef()
 
-  const coneGeom = useMemo(() => {
-    const g = new THREE.ConeGeometry(0.5, 0.85, 4, 1)
-    g.computeVertexNormals()
-    return g
-  }, [])
-
-  const edgesGeom = useMemo(() => new THREE.EdgesGeometry(coneGeom, 1), [coneGeom])
-  const mat = useMemo(() => new THREE.LineBasicMaterial({ color: GOLD }), [])
-
-  useEffect(() => () => {
-    coneGeom.dispose()
-    edgesGeom.dispose()
-    mat.dispose()
-  }, [coneGeom, edgesGeom, mat])
-
-  // Flash on mount: off/on 3 times, then stay on
   useEffect(() => {
     if (!group.current) return
     group.current.visible = false
@@ -53,14 +46,17 @@ export default function GoldPyramid({
     if (!group.current) return
     const v = engine.values
     const reactive = v[reactiveBand] || 0
-    group.current.rotation.y += spinSpeed * spinDirection * (1 + v.mid * 1.2) * dt
+    group.current.rotation.x += spinSpeed * spinDirection * (1 + v.mid * 1.2) * dt
     const s = baseScale * (1 + reactive * punchAmount)
     group.current.scale.set(s, s, s)
   })
 
   return (
     <group ref={group} position={position}>
-      <lineSegments geometry={edgesGeom} material={mat} />
+      <Line points={BASE_LOOP} color={GOLD} lineWidth={3} />
+      {BASE.map((b, i) => (
+        <Line key={i} points={[APEX, b]} color={GOLD} lineWidth={3} />
+      ))}
     </group>
   )
 }

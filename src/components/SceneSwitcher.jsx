@@ -7,8 +7,7 @@ import ReactiveObject from './ReactiveObject.jsx'
 import ProceduralPyramid from './ProceduralPyramid.jsx'
 import GoldPyramid from './GoldPyramid.jsx'
 import TriangleTunnel from './TriangleTunnel.jsx'
-import TrianglePolar from './TrianglePolar.jsx'
-import TriangleField from './TriangleField.jsx'
+import TriangleThreeUp from './TriangleThreeUp.jsx'
 import QuietTriangle from './QuietTriangle.jsx'
 import DotParadeGrid from './DotParadeGrid.jsx'
 import { SCENES, PALETTES } from '../scene/SceneDirector.js'
@@ -31,9 +30,9 @@ function HandsGLB() {
     const box = new THREE.Box3().setFromObject(cloned)
     const size = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
-    cloned.scale.setScalar(3.2 / maxDim)
+    cloned.scale.setScalar(5.5 / maxDim)
     const center = box.getCenter(new THREE.Vector3())
-    cloned.position.sub(center.multiplyScalar(3.2 / maxDim))
+    cloned.position.sub(center.multiplyScalar(5.5 / maxDim))
     cloned.traverse(obj => {
       if (obj.isMesh) {
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
@@ -273,10 +272,7 @@ export default function SceneSwitcher({ state, engine, palette, dotPhase, flashH
     }
 
     case SCENES.TRIANGLE_POLAR:
-      return <TrianglePolar key={`tp-${spinSeed}`} engine={engine} palette={palette} />
-
-    case SCENES.TRIANGLE_FIELD:
-      return <TriangleField key={`tf-${spinSeed}`} engine={engine} palette={palette} spinSeed={spinSeed} />
+      return <TriangleThreeUp key={`tt-${spinSeed}`} engine={engine} palette={palette} spinSeed={spinSeed} />
 
     case SCENES.QUIET_TRIANGLE:
       return <QuietTriangle key={`qt-${spinSeed}`} engine={engine} />

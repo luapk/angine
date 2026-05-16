@@ -10,7 +10,7 @@ const TRI_SIZE = 2.0
 
 function makeTriangleGeometry(size) {
   const r = size
-  const a0 = -Math.PI / 2
+  const a0 = Math.PI / 2
   const a1 = a0 + (2 * Math.PI) / 3
   const a2 = a1 + (2 * Math.PI) / 3
   const v = (a) => [Math.cos(a) * r, Math.sin(a) * r, 0]
