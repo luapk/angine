@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
-import { useThree } from '@react-three/fiber'
 import PolkaBackground from './PolkaBackground.jsx'
 import ReactiveObject from './ReactiveObject.jsx'
 import EngineTick from './EngineTick.jsx'
 import { resolvePalette } from '../scene/palette.js'
 import { PALETTES } from '../scene/SceneDirector.js'
 
-const PALETTE_LEFT  = resolvePalette(PALETTES.BLACK_ON_WHITE)  // black dots on white bg
-const PALETTE_RIGHT = resolvePalette(PALETTES.WHITE_ON_BLACK)  // white dots on black bg
+const PALETTE_LEFT  = resolvePalette(PALETTES.BLACK_ON_WHITE)
+const PALETTE_RIGHT = resolvePalette(PALETTES.WHITE_ON_BLACK)
 
 function DisableACES() {
   const gl = useThree(s => s.gl)
@@ -20,19 +19,23 @@ function DisableACES() {
 export default function IntroSequence({ engine, onComplete }) {
   const [subPhase, setSubPhase] = useState(0)
   const [moving, setMoving] = useState(false)
-  const beatCountRef = useRef(0)
+  const doneRef = useRef(false)
 
   useEffect(() => {
-    const unsub = engine.onBeat(() => {
-      beatCountRef.current++
-      const b = beatCountRef.current
-      if (b === 2) setSubPhase(1)
-      if (b === 3) setSubPhase(2)
-      if (b === 5) setSubPhase(3)
-      if (b === 7) { setSubPhase(4); setMoving(true) }
-      if (b >= 9) onComplete()
-    })
-    return () => unsub()
+    // BPM-based timeouts — guaranteed to fire regardless of beat detection state
+    const bpm  = engine.bpm || 120
+    const beat = 60000 / bpm   // ms per beat
+
+    const timers = [
+      setTimeout(() => setSubPhase(1), beat * 1),      // panels split
+      setTimeout(() => setSubPhase(2), beat * 2),      // polka dots
+      setTimeout(() => setSubPhase(3), beat * 4),      // models appear (bar 2)
+      setTimeout(() => { setSubPhase(4); setMoving(true) }, beat * 6),  // start moving
+      setTimeout(() => {
+        if (!doneRef.current) { doneRef.current = true; onComplete() }
+      }, beat * 8),                                    // hand off (bar 3)
+    ]
+    return () => timers.forEach(clearTimeout)
   }, [engine, onComplete])
 
   const showPanels = subPhase >= 1
@@ -44,12 +47,10 @@ export default function IntroSequence({ engine, onComplete }) {
   return (
     <div className="stage">
       <div className="stage-inner" style={{ background: '#000', position: 'relative' }}>
-        {/* White left panel */}
         {showPanels && (
           <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', background: '#fff', zIndex: 1 }} />
         )}
 
-        {/* Polka dots on each half */}
         {showDots && (
           <>
             <PolkaBackground engine={engine} palette={PALETTE_LEFT}  half="left" />
@@ -57,7 +58,6 @@ export default function IntroSequence({ engine, onComplete }) {
           </>
         )}
 
-        {/* 3D models */}
         {showModels && (
           <Canvas
             dpr={[1, 2]}
