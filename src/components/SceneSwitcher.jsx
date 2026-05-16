@@ -107,10 +107,11 @@ function HandsZoomGLB() {
 }
 
 // Dancer GLBs use SkinnedMesh — can't use clone(true) or ReactiveObject.
-// The static bind-pose bounding box does NOT match where the posed/skinned
-// mesh actually renders, so we measure the live posed bounds a few frames in
-// (via SkinnedMesh.computeBoundingBox) and stand the character on the bottom
-// edge of the viewport.
+// The static bind-pose bounding box does NOT reflect the actual skeleton-
+// driven rendered size for Mixamo rigs, so BOTH scale and position are
+// derived from the LIVE posed bounds a few frames in (after the animation
+// mixer poses the skeleton). The character is sized to the viewport height
+// and stood on the bottom edge of the frame.
 function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
   const groupRef = useRef()
   const gltf = useGLTF(url)
@@ -120,14 +121,6 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
   const object = useMemo(() => {
     if (!gltf?.scene) return null
     const cloned = skeletonClone(gltf.scene)
-
-    // Scale to fit the viewport height so the full character is visible.
-    // landscape fov45 z=8 → ~6.6 tall; portrait fov72 → ~11.2 tall.
-    const box = new THREE.Box3().setFromObject(cloned)
-    const size = box.getSize(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z, 0.0001)
-    const targetH = portrait ? 9.0 : 5.5
-    cloned.scale.multiplyScalar(targetH / maxDim)
 
     // Clone materials so we don't corrupt the useGLTF cache, then push contrast.
     const contrast = (c) => Math.min(1, Math.max(0, (c - 0.5) * 1.35 + 0.5))
@@ -149,7 +142,7 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
     })
 
     return cloned
-  }, [gltf, portrait])
+  }, [gltf])
 
   const clips = useMemo(() => gltf.animations || [], [gltf])
   const { actions } = useAnimations(clips, groupRef)
@@ -164,11 +157,12 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
     const g = groupRef.current
     if (!g) return
 
-    // Wait a few frames so the animation mixer has posed the skeleton, then
-    // measure the real skinned bounds and drop the feet onto the bottom frame.
+    // Once the mixer has posed the skeleton (group still at scale 1,
+    // position 0), measure the REAL rendered bounds, then size the whole
+    // group to the viewport height and stand the feet on the bottom frame.
     if (!placedRef.current) {
       frameRef.current++
-      if (frameRef.current >= 5) {
+      if (frameRef.current >= 6) {
         g.updateWorldMatrix(true, true)
         const wb = new THREE.Box3()
         let found = false
@@ -185,11 +179,18 @@ function DancerGLB({ url, engine, spinDirection, spinSpeed, portrait }) {
             found = true
           }
         })
-        if (found && isFinite(wb.min.y) && wb.max.y > wb.min.y) {
+        const h = wb.max.y - wb.min.y
+        if (found && isFinite(h) && h > 0.0001) {
+          // landscape fov45 z=8 → ~6.6 tall; portrait fov72 → ~11.2 tall
+          const targetH = portrait ? 9.0 : 5.4
+          const k = targetH / h
           const c = wb.getCenter(new THREE.Vector3())
           const floorY = portrait ? -5.6 : -3.2
-          g.position.x -= c.x
-          g.position.y += floorY - wb.min.y
+          // Box was measured at group scale 1 / position 0 → scaling about
+          // the group origin maps min.y → wb.min.y * k.
+          g.scale.setScalar(k)
+          g.position.x = -c.x * k
+          g.position.y = floorY - wb.min.y * k
           placedRef.current = true
         }
       }
