@@ -6,7 +6,7 @@ const INVERTED = [Math.PI, 0, 0]
 const UPRIGHT  = [0, 0, 0]
 
 export default function TriangleThreeUp({ engine, palette, spinSeed, portrait }) {
-  const spread = portrait ? 2.2 : 2.5
+  const spread = portrait ? 2.7 : 2.5
   const posA = portrait ? [0,  spread, 0] : [-spread, 0, 0]
   const posC = portrait ? [0, -spread, 0] : [ spread, 0, 0]
 
